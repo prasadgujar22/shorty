@@ -13,6 +13,10 @@ updates:
     commit-message: { prefix: "build(deps)" }
     groups:
       web-minor-patch: { update-types: [minor, patch] }
+    ignore:
+      # Types must match the Node LTS the build runs on (services/web/.nvmrc).
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
