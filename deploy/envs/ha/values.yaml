@@ -32,6 +32,9 @@ redirect-svc:
     minReplicas: 3
     maxReplicas: 8
     cpuUtilization: 60
+    # Custom metric via prometheus-adapter: scale out above 400 req/s per pod
+    # (see docs/TUNING.md for how this threshold was chosen).
+    rps: { enabled: true, averageValue: "400" }
   env:
     CLICKS_STREAM_REPLICAS: 3
 
