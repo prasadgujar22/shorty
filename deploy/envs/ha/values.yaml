@@ -38,7 +38,7 @@ redirect-svc:
   env:
     CLICKS_STREAM_REPLICAS: 3
     # Small stream = fast replica resync after a NATS restart (docs/TUNING.md).
-    CLICKS_STREAM_MAX_BYTES: 268435456
+    CLICKS_STREAM_MAX_BYTES: "268435456"
 
 analytics-svc:
   replicaCount: 2
@@ -46,7 +46,7 @@ analytics-svc:
   env:
     CLICKS_STREAM_REPLICAS: 3
     # Small stream = fast replica resync after a NATS restart (docs/TUNING.md).
-    CLICKS_STREAM_MAX_BYTES: 268435456
+    CLICKS_STREAM_MAX_BYTES: "268435456"
     DB_MAX_CONNS: 6
 
 web:

@@ -13,6 +13,11 @@ done
 log "helm lint: ok"
 
 for env in dev ha; do
+  # Guard: numbers must not render in scientific notation (Helm float64 trap).
+  if helm template shorty "$charts/shorty" -f "$ROOT_DIR/deploy/envs/$env/values.yaml" -f "$ROOT_DIR/deploy/envs/$env/images.yaml" \
+      | grep -nE 'value: "[0-9.]+e[+-][0-9]+"'; then
+    die "env $env renders a number in scientific notation (quote it or fix the template)"
+  fi
   # Render with monitoring CRDs "present" so ServiceMonitors/PodMonitors are validated too.
   helm template shorty "$charts/shorty" -n shorty \
       -f "$ROOT_DIR/deploy/envs/$env/values.yaml" -f "$ROOT_DIR/deploy/envs/$env/images.yaml" \

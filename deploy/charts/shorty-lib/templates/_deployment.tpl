@@ -94,8 +94,11 @@ spec:
               value: {{ printf ":%v" .Values.ports.admin | quote }}
             {{- end }}
             {{- range $k, $v := .Values.env }}
+            {{- /* YAML ints arrive as float64; render 268435456, not 2.68435456e+08. */}}
+            {{- $s := toString $v }}
+            {{- if and (kindIs "float64" $v) (eq (float64 (int64 $v)) $v) }}{{ $s = toString (int64 $v) }}{{ end }}
             - name: {{ $k }}
-              value: {{ $v | toString | quote }}
+              value: {{ $s | quote }}
             {{- end }}
             {{- range .Values.secretEnv }}
             - name: {{ .name }}
