@@ -48,6 +48,9 @@ func TestRedirectRecordsClick(t *testing.T) {
 	if w.Code != http.StatusFound || w.Header().Get("Location") != "https://a.io/x" {
 		t.Fatalf("got %d %q", w.Code, w.Header().Get("Location"))
 	}
+	if w.Header().Get("X-Robots-Tag") != "noindex" {
+		t.Fatalf("x-robots-tag = %q", w.Header().Get("X-Robots-Tag"))
+	}
 	if w.Header().Get("Cache-Control") != "private, no-store" {
 		t.Fatalf("cache-control = %q", w.Header().Get("Cache-Control"))
 	}

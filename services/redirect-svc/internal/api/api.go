@@ -72,6 +72,8 @@ func (h *Handler) redirect(w http.ResponseWriter, r *http.Request) {
 	// reach us to be counted.
 	w.Header().Set("Cache-Control", "private, no-store")
 	w.Header().Set("Referrer-Policy", "unsafe-url")
+	// Short links are not content: keep them out of search indexes.
+	w.Header().Set("X-Robots-Tag", "noindex")
 	// Redirecting to stored URLs is the product; links-svc only accepts
 	// absolute http(s) URLs without userinfo.
 	http.Redirect(w, r, target, http.StatusFound) //nolint:gosec // G710: intended redirect
