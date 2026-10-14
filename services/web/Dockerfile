@@ -3,7 +3,7 @@
 #   docker buildx build -f services/web/Dockerfile --platform linux/arm64,linux/amd64 .
 
 # The static build is architecture-independent: run it once on the build host.
-FROM --platform=$BUILDPLATFORM node:24-alpine AS build
+FROM --platform=$BUILDPLATFORM node:26-alpine AS build
 WORKDIR /app
 COPY services/web/package.json services/web/package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
