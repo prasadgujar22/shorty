@@ -1,0 +1,10 @@
+# Default owner for everything in the repo.
+*                         @prasadgujar22
+
+# Service boundaries (split these out when the team grows).
+/services/links-svc/      @prasadgujar22
+/services/redirect-svc/   @prasadgujar22
+/services/analytics-svc/  @prasadgujar22
+/services/web/            @prasadgujar22
+/deploy/                  @prasadgujar22
+/.github/                 @prasadgujar22

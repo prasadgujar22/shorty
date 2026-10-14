@@ -1,0 +1,32 @@
+# Build output
+/bin/
+/dist/
+*.test
+*.out
+coverage.*
+!coverage.svg
+
+# Node / SvelteKit
+node_modules/
+services/web/build/
+services/web/.svelte-kit/
+
+# Helm
+deploy/charts/*/charts/*.tgz
+deploy/charts/*/Chart.lock.bak
+
+# Local state
+.env
+.env.*
+!.env.example
+*.local.yaml
+/.tmp/
+load/results/*.json
+!load/results/.gitkeep
+kubeconfig*
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp

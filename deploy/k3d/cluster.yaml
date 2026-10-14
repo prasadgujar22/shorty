@@ -1,0 +1,51 @@
+# k3d cluster: 1 server (control plane, tainted) + 3 agents spread across
+# three fake zones so topology spread, PDBs and node drains behave like a
+# real multi-AZ cluster.
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: shorty
+servers: 1
+agents: 3
+image: rancher/k3s:v1.36.5-k3s1
+ports:
+  # Host :8080 -> k3d loadbalancer :80 -> Traefik (Service type LoadBalancer via servicelb)
+  - port: 8080:80
+    nodeFilters: [loadbalancer]
+registries:
+  create:
+    name: shorty-registry
+    host: "127.0.0.1"
+    hostPort: "5001"
+  config: |
+    mirrors:
+      "127.0.0.1:5001":
+        endpoint:
+          - http://shorty-registry:5000
+options:
+  k3d:
+    wait: true
+    timeout: 180s
+  k3s:
+    extraArgs:
+      # We install and tune our own Traefik (2 replicas, PDB, metrics).
+      - arg: --disable=traefik
+        nodeFilters: [server:*]
+      # Keep application workloads off the control plane, like a real cluster.
+      - arg: --node-taint=node-role.kubernetes.io/control-plane:NoSchedule
+        nodeFilters: [server:*]
+      # Expose control-plane metrics for kube-prometheus-stack.
+      - arg: --kube-controller-manager-arg=bind-address=0.0.0.0
+        nodeFilters: [server:*]
+      - arg: --kube-scheduler-arg=bind-address=0.0.0.0
+        nodeFilters: [server:*]
+    nodeLabels:
+      - label: topology.kubernetes.io/zone=zone-a
+        nodeFilters: [agent:0]
+      - label: topology.kubernetes.io/zone=zone-b
+        nodeFilters: [agent:1]
+      - label: topology.kubernetes.io/zone=zone-c
+        nodeFilters: [agent:2]
+  kubeconfig:
+    updateDefaultKubeconfig: true
+    switchCurrentContext: true
