@@ -153,8 +153,8 @@ Takeaways:
 - Workers determine **drain rate after an outage**. After a 10 s NATS
   leader election at 2,000 rps, 20k events are queued. One worker (at its
   ceiling) never catches up while new traffic keeps arriving. 16 workers
-  drain at about 16× the arrival rate. The v0.2.0 chaos runs saw buffers
-  peak around 1.2k and drain within a second.
+  drain at about 16× the arrival rate. In the NATS-leader chaos run the
+  buffer peaked around 1.2k events and drained within seconds.
 - An R3 ack in ha costs one quorum round trip. More workers hide that
   latency, and the `Nats-Msg-Id` dedup makes retries safe.
 - An alternative is async publishing with a bounded number of in-flight
@@ -213,4 +213,57 @@ then skips Redis entirely after five in a row.
 
 ## 9. HPA (redirect-svc, ha)
 
-See the HPA section appended below (generated from `load/hpa.sh`).
+`load/hpa.sh` runs in-cluster k6 against the ha env with a ramp of 300 rps
+(30 s) → 2,400 rps (over 60 s) → hold 2 min → 300 rps, sampling the HPA
+every 5 s. Start state: 3 replicas, max 8. The scale-up policy allows +100%
+per 15 s with no stabilisation; scale-down waits 120 s, then removes 1 pod
+per minute.
+
+| HPA metrics | first scale-up (s after start) | path | peak replicas | k6 p95 | k6 p99 | dropped iterations |
+|---|---|---|---|---|---|---|
+| CPU 60% + RPS 400/pod (`rate[1m]`) | 85 | 3→4→6→8 | 8 | 5.1 ms | 19.8 ms | 183 |
+| CPU 60% only | 90 | 3→4→6→8 | 8 | 5.3 ms | 23.2 ms | 631 |
+| CPU 60% + RPS **250/pod** (`rate[30s]`) | **74** | 3→**5→7**→8 | 8 | 73.5 ms | 229.7 ms | 5,273 |
+
+What happened:
+- **The first RPS configuration never led a decision.** The HPA takes the
+  maximum of the per-metric recommendations. With a 1-minute rate window the
+  RPS signal trailed the ramp, and 400 rps/pod was above the point where CPU
+  (requests 100m, so 60% = 60 millicores) already fired. CPU-only behaved the
+  same.
+- **The tuned signal (30 s window, 250/pod) leads.** It scaled about 15 s
+  earlier and in bigger steps, as intended.
+- **On this laptop that didn't help clients, and that's a property of the
+  testbed.** redirect-svc's own p99 stayed ≤ 7 ms in all three runs. During
+  the tuned run the VM hit **~90% CPU**, with k6 at ~2.4 cores and Traefik at
+  ~1.3 cores, all on the same 8 cores as the redirect pods. Extra replicas
+  add no capacity when every node is a container in one VM. They add startup
+  and scheduling work at the worst moment, and the load generator starves.
+  On real nodes, new pods bring new CPU, which is exactly when a leading
+  indicator pays off.
+
+Kept configuration (ha): **CPU 60% + RPS 250/pod over 30 s**, min 3 (one per
+zone), max 8. Notes:
+- `requests.cpu: 100m` is deliberately small for a 1-CPU limit. Utilisation
+  is measured against the request, so the HPA reacts long before the pod is
+  anywhere near its limit.
+- `minReplicas: 3` = one per zone. With `maxSkew: 1` zone spread and a PDB of
+  `maxUnavailable: 1`, losing a zone or draining a node still leaves 2.
+- The adapter's `rate[30s]` needs at least two scrapes in the window (scrape
+  interval 15 s). Don't go below 30 s.
+- Scale-down is deliberately slow (120 s window, 1 pod/min) so a dip in a
+  bursty load doesn't throw away warm L1 caches.
+
+## Summary of defaults chosen
+
+| Knob | Value | Why |
+|---|---|---|
+| redirect-svc CPU | request 100m, limit 1 (GOMAXPROCS 2) | no throttling at 1.5k rps/pod; early HPA signal |
+| GOMEMLIMIT | 0.9 × memory limit | turns OOM kills into GC work (survived a 90k-event backlog in 32 Mi) |
+| `DB_MAX_CONNS` | 10 (dev), 8/6 (ha, 2 replicas each) | 2 → 55 empty-pool waits/s; 40 no better than 10 |
+| L1 cache | 10k entries, 30 s, negative 5 s | 0 errors under Redis/NATS faults (vs 0.7–1.7%), −33% CPU |
+| Redis | TTL 1 h ± 10%, negative 30 s, no retries, 100 ms timeouts | fail fast; immutable links |
+| Publish workers / buffer | 16 / 100k | 1 worker saturates at ~2k events/s; 16 drains a backlog quickly |
+| Consumer batch | 500, fetch wait 500 ms | ~3 commits/s instead of ~1,500 at the same throughput |
+| Stream size (ha) | 256 MiB, 7 d | bounded replica resync after restarts |
+| HPA | CPU 60% + 250 rps/pod (30 s), 3–8 | RPS leads CPU by ~15 s |
