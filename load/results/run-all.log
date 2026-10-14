@@ -1,0 +1,73 @@
+[1m[chaos 11:54:51] run baseline-115451: baseline on shorty-ha at 800 rps for 150s (fault at +45s)[0m
+    [1m[chaos 11:55:37] baseline: no fault injected[0m
+[1m[chaos 11:57:21] load finished: run baseline-115451: 800 rps, p50 0.71ms p95 2.52ms p99 6.80ms, unexpected 0.000%, 302s 120001[0m
+[1m[chaos 11:57:25] clicks: k6 saw 120001 redirects, analytics counted 120001 (lost: 0)[0m
+[1m[chaos 11:57:25] analysis: {"seconds": 151, "samples": 120001, "pre_fault_p99_ms": 7.52, "fault_window_p99_ms": 6.48, "worst_second_p99_ms": 66.88, "errors": 0, "error_seconds": 0, "error_window_s": 0, "first_error_after_fault_s": null, "latency_recovery_s": 0}[0m
+[1m[chaos 11:57:25] appended to /Users/prasad_mac/shorty/docs/RESULTS.md[0m
+[1m[chaos 11:57:25] cool-down: waiting for all pods in shorty-ha to be ready[0m
+[1m[chaos 11:58:12] run kill-pods-115812: kill-pods on shorty-ha at 800 rps for 150s (fault at +45s)[0m
+    [1m[chaos 11:58:59] round 1: delete pod/links-svc-767f457d77-pptv8 [0m
+    [1m[chaos 11:59:00] round 1: delete pod/redirect-svc-5f8dd9c445-9f797 [0m
+    [1m[chaos 11:59:00] round 1: delete pod/analytics-svc-7fc7c5b4ff-4jjjd [0m
+    [1m[chaos 11:59:00] round 1: delete pod/web-65f8cbcf98-qkwxg [0m
+    [1m[chaos 11:59:15] round 2: delete pod/links-svc-767f457d77-ct6m8 [0m
+    [1m[chaos 11:59:16] round 2: delete pod/redirect-svc-5f8dd9c445-kcl6m [0m
+    [1m[chaos 11:59:16] round 2: delete pod/analytics-svc-7fc7c5b4ff-nktwf [0m
+    [1m[chaos 11:59:16] round 2: delete pod/web-65f8cbcf98-rcxw9 [0m
+    [1m[chaos 11:59:31] round 3: delete pod/links-svc-767f457d77-lc48w [0m
+    [1m[chaos 11:59:32] round 3: delete pod/redirect-svc-5f8dd9c445-ksncq [0m
+    [1m[chaos 11:59:32] round 3: delete pod/analytics-svc-7fc7c5b4ff-9l4zz [0m
+    [1m[chaos 11:59:32] round 3: delete pod/web-65f8cbcf98-j86zk [0m
+[1m[chaos 12:00:43] load finished: run kill-pods-115812: 800 rps, p50 0.73ms p95 3.36ms p99 10.81ms, unexpected 0.000%, 302s 120001[0m
+[1m[chaos 12:00:47] clicks: k6 saw 120001 redirects, analytics counted 120001 (lost: 0)[0m
+[1m[chaos 12:00:47] analysis: {"seconds": 151, "samples": 120001, "pre_fault_p99_ms": 5.95, "fault_window_p99_ms": 15.53, "worst_second_p99_ms": 100.08, "errors": 0, "error_seconds": 0, "error_window_s": 0, "first_error_after_fault_s": null, "latency_recovery_s": 6}[0m
+[1m[chaos 12:00:47] appended to /Users/prasad_mac/shorty/docs/RESULTS.md[0m
+[1m[chaos 12:00:47] cool-down: waiting for all pods in shorty-ha to be ready[0m
+[1m[chaos 12:01:34] run kill-pods-force-120134: kill-pods-force on shorty-ha at 800 rps for 150s (fault at +45s)[0m
+    [1m[chaos 12:02:21] round 1: delete pod/links-svc-767f457d77-chdkj (SIGKILL)[0m
+    [1m[chaos 12:02:21] round 1: delete pod/redirect-svc-5f8dd9c445-8dpvx (SIGKILL)[0m
+    [1m[chaos 12:02:21] round 1: delete pod/analytics-svc-7fc7c5b4ff-8c58g (SIGKILL)[0m
+    [1m[chaos 12:02:22] round 1: delete pod/web-65f8cbcf98-dtzvl (SIGKILL)[0m
+    [1m[chaos 12:02:37] round 2: delete pod/links-svc-767f457d77-srtkf (SIGKILL)[0m
+    [1m[chaos 12:02:37] round 2: delete pod/redirect-svc-5f8dd9c445-gmfpc (SIGKILL)[0m
+    [1m[chaos 12:02:37] round 2: delete pod/analytics-svc-7fc7c5b4ff-rxfsm (SIGKILL)[0m
+    [1m[chaos 12:02:38] round 2: delete pod/web-65f8cbcf98-c9z8n (SIGKILL)[0m
+    [1m[chaos 12:02:53] round 3: delete pod/links-svc-767f457d77-5mdzq (SIGKILL)[0m
+    [1m[chaos 12:02:53] round 3: delete pod/redirect-svc-5f8dd9c445-9sqpw (SIGKILL)[0m
+    [1m[chaos 12:02:53] round 3: delete pod/analytics-svc-7fc7c5b4ff-mmn9f (SIGKILL)[0m
+    [1m[chaos 12:02:54] round 3: delete pod/web-65f8cbcf98-44pfk (SIGKILL)[0m
+[1m[chaos 12:04:05] load finished: run kill-pods-force-120134: 800 rps, p50 0.74ms p95 3.45ms p99 11.24ms, unexpected 0.000%, 302s 119988[0m
+[1m[chaos 12:04:08] clicks: k6 saw 119988 redirects, analytics counted 119988 (lost: 0)[0m
+[1m[chaos 12:04:08] analysis: {"seconds": 151, "samples": 119988, "pre_fault_p99_ms": 5.23, "fault_window_p99_ms": 22.93, "worst_second_p99_ms": 125.55, "errors": 0, "error_seconds": 0, "error_window_s": 0, "first_error_after_fault_s": null, "latency_recovery_s": 0}[0m
+[1m[chaos 12:04:08] appended to /Users/prasad_mac/shorty/docs/RESULTS.md[0m
+[1m[chaos 12:04:08] cool-down: waiting for all pods in shorty-ha to be ready[0m
+[1m[chaos 12:04:55] run drain-node-120455: drain-node on shorty-ha at 800 rps for 150s (fault at +45s)[0m
+    [1m[chaos 12:05:43] draining k3d-shorty-agent-1 (pg primary is on k3d-shorty-agent-0): analytics-svc-7fc7c5b4ff-qp56z links-svc-767f457d77-6b747 nats-1 redirect-svc-5f8dd9c445-ph4x5 redis-78f64c4589-wcwr6 shorty-pg-2 web-65f8cbcf98-ccwq4 [0m
+    [1m[chaos 12:06:01] drained k3d-shorty-agent-1; holding 60s[0m
+    [1m[chaos 12:07:02] uncordoned k3d-shorty-agent-1[0m
+[1m[chaos 12:07:26] load finished: run drain-node-120455: 800 rps, p50 1.04ms p95 16.07ms p99 86.46ms, unexpected 0.000%, 302s 119915[0m
+[1m[chaos 12:07:30] clicks: k6 saw 119915 redirects, analytics counted 119915 (lost: 0)[0m
+[1m[chaos 12:07:30] analysis: {"seconds": 151, "samples": 119915, "pre_fault_p99_ms": 6.68, "fault_window_p99_ms": 136.01, "worst_second_p99_ms": 448.98, "errors": 0, "error_seconds": 0, "error_window_s": 0, "first_error_after_fault_s": null, "latency_recovery_s": 93}[0m
+[1m[chaos 12:07:30] appended to /Users/prasad_mac/shorty/docs/RESULTS.md[0m
+[1m[chaos 12:07:30] cool-down: waiting for all pods in shorty-ha to be ready[0m
+[1m[chaos 12:08:17] run kill-redis-120817: kill-redis on shorty-ha at 800 rps for 150s (fault at +45s)[0m
+    [1m[chaos 12:09:04] SIGKILL pod/redis-78f64c4589-578l4[0m
+[1m[chaos 12:10:48] load finished: run kill-redis-120817: 800 rps, p50 0.72ms p95 3.03ms p99 10.14ms, unexpected 0.000%, 302s 120001[0m
+[1m[chaos 12:10:52] clicks: k6 saw 120001 redirects, analytics counted 120001 (lost: 0)[0m
+[1m[chaos 12:10:52] analysis: {"seconds": 151, "samples": 120001, "pre_fault_p99_ms": 9.01, "fault_window_p99_ms": 11.4, "worst_second_p99_ms": 101.64, "errors": 0, "error_seconds": 0, "error_window_s": 0, "first_error_after_fault_s": null, "latency_recovery_s": 11}[0m
+[1m[chaos 12:10:52] appended to /Users/prasad_mac/shorty/docs/RESULTS.md[0m
+[1m[chaos 12:10:52] cool-down: waiting for all pods in shorty-ha to be ready[0m
+[1m[chaos 12:11:39] run kill-nats-121139: kill-nats on shorty-ha at 800 rps for 150s (fault at +45s)[0m
+    [1m[chaos 12:12:26] CLICKS stream leader: unknown (single node?); SIGKILL nats-0[0m
+[1m[chaos 12:14:10] load finished: run kill-nats-121139: 800 rps, p50 0.74ms p95 3.92ms p99 24.16ms, unexpected 0.000%, 302s 119939[0m
+[1m[chaos 12:14:13] clicks: k6 saw 119939 redirects, analytics counted 119939 (lost: 0)[0m
+[1m[chaos 12:14:13] analysis: {"seconds": 151, "samples": 119939, "pre_fault_p99_ms": 13.68, "fault_window_p99_ms": 32.19, "worst_second_p99_ms": 209.69, "errors": 0, "error_seconds": 0, "error_window_s": 0, "first_error_after_fault_s": null, "latency_recovery_s": 0}[0m
+[1m[chaos 12:14:13] appended to /Users/prasad_mac/shorty/docs/RESULTS.md[0m
+[1m[chaos 12:14:13] cool-down: waiting for all pods in shorty-ha to be ready[0m
+[1m[chaos 12:15:00] run kill-postgres-prim-121500: kill-postgres-primary on shorty-ha at 800 rps for 150s (fault at +45s)[0m
+    [1m[chaos 12:15:48] SIGKILL postgres primary shorty-pg-1[0m
+[1m[chaos 12:17:31] load finished: run kill-postgres-prim-121500: 800 rps, p50 0.76ms p95 3.26ms p99 10.01ms, unexpected 0.000%, 302s 119920[0m
+[1m[chaos 12:17:38] clicks: k6 saw 119920 redirects, analytics counted 119920 (lost: 0)[0m
+[1m[chaos 12:17:38] analysis: {"seconds": 151, "samples": 119920, "pre_fault_p99_ms": 4.78, "fault_window_p99_ms": 10.86, "worst_second_p99_ms": 238.32, "errors": 0, "error_seconds": 0, "error_window_s": 0, "first_error_after_fault_s": null, "latency_recovery_s": 2}[0m
+[1m[chaos 12:17:38] appended to /Users/prasad_mac/shorty/docs/RESULTS.md[0m
+[1m[chaos 12:17:38] cool-down: waiting for all pods in shorty-ha to be ready[0m

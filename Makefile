@@ -90,11 +90,11 @@ gitops: ## Install Argo CD and the app-of-apps (dev auto-syncs from main)
 
 ##@ Reliability
 .PHONY: load
-load: ## k6 load test against the redirect path (SCENARIO=baseline)
-	@scripts/load.sh $(SCENARIO)
+load: ## k6 load test against the redirect path (RATE, DURATION, HOST)
+	@scripts/load.sh
 
 .PHONY: chaos
-chaos: ## Run all chaos scenarios under k6 load, append to docs/RESULTS.md
+chaos: ## Run all chaos scenarios under k6 load against NS=shorty-ha, append to docs/RESULTS.md
 	@chaos/run-all.sh
 
 .PHONY: chaos-%

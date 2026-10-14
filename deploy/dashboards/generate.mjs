@@ -188,7 +188,7 @@ out['redirect-svc'] = dashboard('shorty-redirect-svc', 'Shorty / redirect-svc', 
   ...red('redirect-svc', 0),
   row('redirect-svc · cache (Redis cache-aside)', 20),
   stat('Cache hit ratio', { h: 7, w: 6, x: 0, y: 21 },
-    `sum(rate(shorty_redirect_cache_requests_total{${r}, result=~"hit|negative_hit"}[$__rate_interval])) / clamp_min(sum(rate(shorty_redirect_cache_requests_total{${r}}[$__rate_interval])), 1e-9)`,
+    `sum(rate(shorty_redirect_cache_requests_total{${r}, result=~".*hit"}[$__rate_interval])) / clamp_min(sum(rate(shorty_redirect_cache_requests_total{${r}}[$__rate_interval])), 1e-9)`,
     { unit: 'percentunit', decimals: 1 }),
   ts('Cache results', { h: 7, w: 9, x: 6, y: 21 }, [target(`sum by (result) (rate(shorty_redirect_cache_requests_total{${r}}[$__rate_interval]))`, '{{result}}')], { unit: 'ops' }),
   ts('Lookup latency p99 (cache vs links-svc) + breaker', { h: 7, w: 9, x: 15, y: 21 }, [

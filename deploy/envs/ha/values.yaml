@@ -37,12 +37,16 @@ redirect-svc:
     rps: { enabled: true, averageValue: "400" }
   env:
     CLICKS_STREAM_REPLICAS: 3
+    # Small stream = fast replica resync after a NATS restart (docs/TUNING.md).
+    CLICKS_STREAM_MAX_BYTES: 268435456
 
 analytics-svc:
   replicaCount: 2
   pdb: { enabled: true, maxUnavailable: 1 }
   env:
     CLICKS_STREAM_REPLICAS: 3
+    # Small stream = fast replica resync after a NATS restart (docs/TUNING.md).
+    CLICKS_STREAM_MAX_BYTES: 268435456
     DB_MAX_CONNS: 6
 
 web:

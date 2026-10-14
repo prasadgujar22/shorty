@@ -1,0 +1,1 @@
+run kill-redis-120817: 800 rps, p50 0.72ms p95 3.03ms p99 10.14ms, unexpected 0.000%, 302s 120001

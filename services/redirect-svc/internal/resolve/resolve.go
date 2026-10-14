@@ -37,9 +37,13 @@ type Source interface {
 
 // Options tune caching.
 type Options struct {
-	TTL         time.Duration // positive entries
+	TTL         time.Duration // positive entries (Redis)
 	TTLJitter   float64       // ±fraction of TTL, spreads expiry to avoid stampedes
-	NegativeTTL time.Duration // "does not exist" entries
+	NegativeTTL time.Duration // "does not exist" entries (Redis)
+
+	L1Size        int           // in-process LRU entries; 0 disables the L1
+	L1TTL         time.Duration // positive entries in the L1
+	L1NegativeTTL time.Duration // "does not exist" entries in the L1
 }
 
 // Resolver implements cache-aside lookups with request coalescing.
@@ -48,6 +52,7 @@ type Resolver struct {
 	source Source
 	opts   Options
 	group  singleflight.Group
+	l1     *l1
 
 	results *prometheus.CounterVec
 	latency *prometheus.HistogramVec
@@ -55,10 +60,10 @@ type Resolver struct {
 
 // New creates a Resolver and registers its metrics.
 func New(cache Cache, source Source, opts Options, reg prometheus.Registerer) *Resolver {
-	r := &Resolver{cache: cache, source: source, opts: opts,
+	r := &Resolver{cache: cache, source: source, opts: opts, l1: newL1(opts.L1Size),
 		results: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name: "shorty_redirect_cache_requests_total",
-			Help: "Cache lookups by result: hit, negative_hit, miss, error.",
+			Help: "Cache lookups by result: l1_hit, l1_negative_hit, hit, negative_hit, miss, error.",
 		}, []string{"result"}),
 		latency: prometheus.NewHistogramVec(prometheus.HistogramOpts{
 			Name:    "shorty_redirect_lookup_seconds",
@@ -66,14 +71,25 @@ func New(cache Cache, source Source, opts Options, reg prometheus.Registerer) *R
 			Buckets: []float64{.0002, .0005, .001, .0025, .005, .01, .025, .05, .1, .25, .5},
 		}, []string{"source"}),
 	}
-	reg.MustRegister(r.results, r.latency)
+	reg.MustRegister(r.results, r.latency, prometheus.NewGaugeFunc(prometheus.GaugeOpts{
+		Name: "shorty_redirect_l1_entries",
+		Help: "Entries in the in-process L1 cache.",
+	}, func() float64 { return float64(r.l1.len()) }))
 	return r
 }
 
 func key(slug string) string { return "shorty:link:" + slug }
 
-// Resolve returns the target URL for slug.
+// Resolve returns the target URL for slug: L1 -> Redis -> links-svc.
 func (r *Resolver) Resolve(ctx context.Context, slug string) (string, error) {
+	if v, ok := r.l1.get(slug); ok {
+		if v == negativeMarker {
+			r.results.WithLabelValues("l1_negative_hit").Inc()
+			return "", ErrNotFound
+		}
+		r.results.WithLabelValues("l1_hit").Inc()
+		return v, nil
+	}
 	start := time.Now()
 	val, found, err := r.cache.Get(ctx, key(slug))
 	r.latency.WithLabelValues("cache").Observe(time.Since(start).Seconds())
@@ -83,9 +99,11 @@ func (r *Resolver) Resolve(ctx context.Context, slug string) (string, error) {
 		r.results.WithLabelValues("error").Inc()
 	case found && val == negativeMarker:
 		r.results.WithLabelValues("negative_hit").Inc()
+		r.l1.set(slug, negativeMarker, r.opts.L1NegativeTTL)
 		return "", ErrNotFound
 	case found:
 		r.results.WithLabelValues("hit").Inc()
+		r.l1.set(slug, val, r.opts.L1TTL)
 		return val, nil
 	default:
 		r.results.WithLabelValues("miss").Inc()
@@ -103,6 +121,7 @@ func (r *Resolver) Resolve(ctx context.Context, slug string) (string, error) {
 		r.latency.WithLabelValues("links").Observe(time.Since(start).Seconds())
 		switch {
 		case errors.Is(err, ErrNotFound):
+			r.l1.set(slug, negativeMarker, r.opts.L1NegativeTTL)
 			if cacheOK {
 				_ = r.cache.Set(lctx, key(slug), negativeMarker, r.opts.NegativeTTL)
 			}
@@ -110,6 +129,7 @@ func (r *Resolver) Resolve(ctx context.Context, slug string) (string, error) {
 		case err != nil:
 			return "", errors.Join(ErrUnavailable, err)
 		}
+		r.l1.set(slug, u, r.opts.L1TTL)
 		if cacheOK {
 			_ = r.cache.Set(lctx, key(slug), u, r.jitteredTTL())
 		}

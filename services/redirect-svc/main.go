@@ -43,6 +43,10 @@ func run() error {
 		TTL:         env.Duration("CACHE_TTL", time.Hour),
 		TTLJitter:   env.Float("CACHE_TTL_JITTER", 0.1),
 		NegativeTTL: env.Duration("CACHE_NEGATIVE_TTL", 30*time.Second),
+
+		L1Size:        env.Int("L1_CACHE_SIZE", 10_000),
+		L1TTL:         env.Duration("L1_CACHE_TTL", 30*time.Second),
+		L1NegativeTTL: env.Duration("L1_CACHE_NEGATIVE_TTL", 5*time.Second),
 	}
 	linksURL := env.String("LINKS_URL", "http://links-svc:8080")
 	linksTimeout := env.Duration("LINKS_TIMEOUT", 500*time.Millisecond)
@@ -111,6 +115,6 @@ func run() error {
 	handler := httpx.Instrument(h.Routes(), httpx.NewMetrics(srv.Registry), log)
 	srv.SetReady()
 	log.Info("started", "links_url", linksURL, "redis", redisOpts.Addr, "nats", natsURL,
-		"cache_ttl", resolveOpts.TTL.String(), "click_workers", recOpts.Workers, "click_buffer", recOpts.BufferSize)
+		"cache_ttl", resolveOpts.TTL.String(), "l1_size", resolveOpts.L1Size, "l1_ttl", resolveOpts.L1TTL.String(), "click_workers", recOpts.Workers, "click_buffer", recOpts.BufferSize)
 	return srv.Run(ctx, handler, admin)
 }

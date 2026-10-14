@@ -43,11 +43,19 @@ def main(path, fault):
     out["error_seconds"] = len(err_secs)
     out["error_window_s"] = (err_secs[-1] - err_secs[0] + 1) if err_secs else 0
     out["first_error_after_fault_s"] = (err_secs[0] - fault) if (err_secs and fault) else None
-    # seconds after the fault until per-second p99 is back under 2x the pre-fault p99
+    # Recovery: seconds from the fault until the first run of 10 consecutive
+    # seconds whose p99 is under max(2x pre-fault p99, 25 ms). Isolated
+    # one-second blips (GC, host jitter) don't count as "not recovered".
     if fault and pre:
-        limit = max(2 * out["pre_fault_p99_ms"], 10)
-        bad = [t for t in range(fault, end + 1) if per_sec.get(t) and pct(per_sec[t], 99) > limit]
-        out["latency_recovery_s"] = (bad[-1] - fault + 1) if bad else 0
+        limit = max(2 * out["pre_fault_p99_ms"], 25)
+        streak, rec = 0, None
+        for t in range(fault, end + 1):
+            ok = (not per_sec.get(t)) or pct(per_sec[t], 99) <= limit
+            streak = streak + 1 if ok else 0
+            if streak >= 10:
+                rec = t - 9 - fault
+                break
+        out["latency_recovery_s"] = rec
     print(json.dumps(out))
 
 

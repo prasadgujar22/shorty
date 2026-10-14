@@ -136,3 +136,52 @@ func TestSingleflightCoalescesMisses(t *testing.T) {
 		t.Fatalf("links-svc called %d times for 50 concurrent misses", n)
 	}
 }
+
+func TestL1ServesWhenRedisAndLinksAreDown(t *testing.T) {
+	c := newCache()
+	s := &fakeSource{urls: map[string]string{"abc": "https://a.io"}}
+	r := New(c, src{s}, Options{TTL: time.Hour, NegativeTTL: time.Minute, L1Size: 10, L1TTL: time.Minute, L1NegativeTTL: time.Minute}, prometheus.NewRegistry())
+	ctx := context.Background()
+	if _, err := r.Resolve(ctx, "abc"); err != nil { // fills L1 + Redis
+		t.Fatal(err)
+	}
+	if _, err := r.Resolve(ctx, "nope"); !errors.Is(err, ErrNotFound) {
+		t.Fatal(err)
+	}
+	c.err = errors.New("redis down")
+	s.err = errors.New("links-svc down")
+	if u, err := r.Resolve(ctx, "abc"); err != nil || u != "https://a.io" {
+		t.Fatalf("L1 should serve during outage: %q %v", u, err)
+	}
+	if _, err := r.Resolve(ctx, "nope"); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("negative L1 entry: %v", err)
+	}
+	if got := testutil.ToFloat64(r.results.WithLabelValues("l1_hit")); got != 1 {
+		t.Fatalf("l1_hit = %v", got)
+	}
+}
+
+func TestL1EvictionAndTTL(t *testing.T) {
+	now := time.Unix(0, 0)
+	c := newL1(2)
+	c.now = func() time.Time { return now }
+	c.set("a", "1", time.Second)
+	c.set("b", "2", time.Second)
+	c.get("a") // a is now most recent
+	c.set("c", "3", time.Second)
+	if _, ok := c.get("b"); ok {
+		t.Fatal("b should have been evicted (LRU)")
+	}
+	if v, ok := c.get("a"); !ok || v != "1" {
+		t.Fatal("a should remain")
+	}
+	now = now.Add(2 * time.Second)
+	if _, ok := c.get("a"); ok || c.len() != 1 {
+		t.Fatalf("a should have expired; len=%d", c.len())
+	}
+	var disabled *l1
+	disabled.set("x", "y", time.Second)
+	if _, ok := disabled.get("x"); ok {
+		t.Fatal("nil L1 must be a no-op")
+	}
+}

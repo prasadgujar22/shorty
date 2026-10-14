@@ -1,0 +1,7 @@
+[1m[chaos 12:22:36] run kill-redis-122236: kill-redis on shorty-ha at 800 rps for 150s (fault at +45s)[0m
+    [1m[chaos 12:23:22] SIGKILL pod/redis-78f64c4589-4vtnw[0m
+    [1m[chaos 12:23:23] SIGKILL pod/redis-78f64c4589-wcpgz[0m
+[1m[chaos 12:25:06] load finished: time="2026-10-14T12:25:06+05:30" level=error msg="thresholds on metrics 'http_req_duration{name:redirect}' have been crossed"[0m
+[1m[chaos 12:25:41] clicks: k6 saw 113733 redirects, analytics counted 114073 (lost: -340)[0m
+[1m[chaos 12:25:41] analysis: {"seconds": 151, "samples": 114513, "pre_fault_p99_ms": 5.3, "fault_window_p99_ms": 92.15, "worst_second_p99_ms": 5061.27, "errors": 780, "error_seconds": 8, "error_window_s": 14, "first_error_after_fault_s": 68, "latency_recovery_s": 13}[0m
+[1m[chaos 12:25:42] appended to /Users/prasad_mac/shorty/docs/RESULTS.md[0m

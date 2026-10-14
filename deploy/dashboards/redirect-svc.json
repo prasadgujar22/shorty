@@ -559,7 +559,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(rate(shorty_redirect_cache_requests_total{job=\"redirect-svc\", namespace=~\"$namespace\", result=~\"hit|negative_hit\"}[$__rate_interval])) / clamp_min(sum(rate(shorty_redirect_cache_requests_total{job=\"redirect-svc\", namespace=~\"$namespace\"}[$__rate_interval])), 1e-9)",
+          "expr": "sum(rate(shorty_redirect_cache_requests_total{job=\"redirect-svc\", namespace=~\"$namespace\", result=~\".*hit\"}[$__rate_interval])) / clamp_min(sum(rate(shorty_redirect_cache_requests_total{job=\"redirect-svc\", namespace=~\"$namespace\"}[$__rate_interval])), 1e-9)",
           "legendFormat": "",
           "refId": "A"
         }

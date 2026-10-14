@@ -66,9 +66,11 @@ func New(o Options, reg prometheus.Registerer) *Redis {
 		DialTimeout:  o.DialTimeout,
 		ReadTimeout:  o.ReadTimeout,
 		WriteTimeout: o.WriteTimeout,
-		PoolTimeout:  o.ReadTimeout * 2,
-		// A cache must fail fast; the resolver falls back to links-svc.
-		MaxRetries: 1,
+		// A cache must fail fast: one attempt, and never wait longer for a
+		// pooled connection than for the reply itself. Worst case per lookup
+		// ~= ReadTimeout instead of ~6x it (v0.1.0 measured 500ms+ stalls).
+		PoolTimeout: o.ReadTimeout,
+		MaxRetries:  -1,
 	})
 	br := NewBreaker(o.BreakerThreshold, o.BreakerCooldown)
 	reg.MustRegister(prometheus.NewGaugeFunc(prometheus.GaugeOpts{

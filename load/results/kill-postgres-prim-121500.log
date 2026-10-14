@@ -1,0 +1,1 @@
+run kill-postgres-prim-121500: 800 rps, p50 0.76ms p95 3.26ms p99 10.01ms, unexpected 0.000%, 302s 119920

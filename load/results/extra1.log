@@ -1,0 +1,6 @@
+[1m[chaos 12:18:45] run kill-nats-121845: kill-nats on shorty-ha at 800 rps for 150s (fault at +45s)[0m
+    [1m[chaos 12:19:32] CLICKS stream leader: nats-2; SIGKILL nats-2[0m
+[1m[chaos 12:21:16] load finished: time="2026-10-14T12:21:16+05:30" level=error msg="thresholds on metrics 'http_req_duration{name:redirect}, shorty_unexpected_status' have been crossed"[0m
+[1m[chaos 12:21:51] clicks: k6 saw 113252 redirects, analytics counted 113265 (lost: -13)[0m
+[1m[chaos 12:21:51] analysis: {"seconds": 151, "samples": 115198, "pre_fault_p99_ms": 3.28, "fault_window_p99_ms": 3194.81, "worst_second_p99_ms": 5000.31, "errors": 1946, "error_seconds": 19, "error_window_s": 23, "first_error_after_fault_s": 31, "latency_recovery_s": 81}[0m
+[1m[chaos 12:21:51] appended to /Users/prasad_mac/shorty/docs/RESULTS.md[0m
