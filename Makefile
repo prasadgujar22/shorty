@@ -12,7 +12,7 @@ TAG          ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo dev)$(she
 GO_SERVICES  := links-svc redirect-svc analytics-svc
 SERVICES     := $(GO_SERVICES) web
 PLATFORMS    ?= linux/arm64
-BASE_URL     ?= http://localhost:8080
+BASE_URL     ?= http://localhost:8088
 SCENARIO     ?= baseline
 
 export CLUSTER_NAME KUBE_CONTEXT REGISTRY ENV NAMESPACE TAG BASE_URL

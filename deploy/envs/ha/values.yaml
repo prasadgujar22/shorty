@@ -1,0 +1,46 @@
+# ha: every stateless service has >= 2 replicas spread across zones with a
+# PDB; Postgres has a synchronous standby; NATS is a 3-node JetStream cluster
+# with R3 streams; Redis has 2 independent cache replicas. Synced manually.
+gateway:
+  host: ""
+
+postgres:
+  instances: 2
+
+redis:
+  replicas: 2
+
+nats:
+  config:
+    cluster: { enabled: true, replicas: 3 }
+  podTemplate:
+    topologySpreadConstraints:
+      topology.kubernetes.io/zone: { maxSkew: 1, whenUnsatisfiable: DoNotSchedule }
+
+links-svc:
+  replicaCount: 2
+  pdb: { enabled: true, maxUnavailable: 1 }
+  env:
+    PUBLIC_BASE_URL: http://localhost:8088
+    DB_MAX_CONNS: 8
+
+redirect-svc:
+  pdb: { enabled: true, maxUnavailable: 1 }
+  hpa:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 8
+    cpuUtilization: 60
+  env:
+    CLICKS_STREAM_REPLICAS: 3
+
+analytics-svc:
+  replicaCount: 2
+  pdb: { enabled: true, maxUnavailable: 1 }
+  env:
+    CLICKS_STREAM_REPLICAS: 3
+    DB_MAX_CONNS: 6
+
+web:
+  replicaCount: 2
+  pdb: { enabled: true, maxUnavailable: 1 }

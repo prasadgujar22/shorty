@@ -9,8 +9,8 @@ servers: 1
 agents: 3
 image: rancher/k3s:v1.36.5-k3s1
 ports:
-  # Host :8080 -> k3d loadbalancer :80 -> Traefik (Service type LoadBalancer via servicelb)
-  - port: 8080:80
+  # Host :8088 -> k3d loadbalancer :80 (8080 is commonly taken by Jenkins/port-forwards) -> Traefik (Service type LoadBalancer via servicelb)
+  - port: 8088:80
     nodeFilters: [loadbalancer]
 registries:
   create:

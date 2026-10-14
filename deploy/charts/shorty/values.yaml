@@ -1,0 +1,78 @@
+# Defaults = the smallest working install. deploy/envs/{dev,ha}/values.yaml
+# layer environment sizing on top; deploy/envs/*/images.yaml pins image tags.
+
+global:
+  # Overrides every service image registry, e.g. 127.0.0.1:5001 for `make deploy`.
+  imageRegistry: ""
+
+gateway:
+  # Empty host = match any Host header (single env per cluster).
+  host: ""
+  entryPoint: web
+  retry: { attempts: 2, initialInterval: 50ms }
+
+postgres:
+  enabled: true
+  name: shorty-pg
+  instances: 1
+  image: ghcr.io/cloudnative-pg/postgresql:17.11
+  storage: 1Gi
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { memory: 512Mi }
+  parameters:
+    max_connections: "100"
+    shared_buffers: 64MB
+    effective_cache_size: 192MB
+    work_mem: 4MB
+    wal_compression: "on"
+    log_min_duration_statement: "250"
+  # One role + schema per service; secrets created by scripts/secrets.sh.
+  roles:
+    - { name: links, secret: shorty-db-links }
+    - { name: analytics, secret: shorty-db-analytics }
+  podMonitor: true
+
+redis:
+  enabled: true
+  # Independent cache replicas behind one Service (no replication needed:
+  # entries are immutable and re-fillable). >1 = cache stays up when a pod dies.
+  replicas: 1
+  image: redis:8.10.2-alpine
+  maxmemory: 96mb
+  resources:
+    requests: { cpu: 25m, memory: 32Mi }
+    limits: { cpu: 500m, memory: 128Mi }
+  exporter:
+    enabled: true
+    image: oliver006/redis_exporter:v1.93.0
+
+nats:
+  enabled: true
+  fullnameOverride: nats
+  natsBox: { enabled: false }
+  config:
+    cluster: { enabled: false, replicas: 3 }
+    jetstream:
+      enabled: true
+      fileStore: { pvc: { size: 1Gi } }
+      # Streams are file-backed; cap the (unused) memory store explicitly.
+      memoryStore: { enabled: true, maxSize: 64Mi }
+  container:
+    merge:
+      resources:
+        requests: { cpu: 50m, memory: 64Mi }
+        limits: { memory: 256Mi }
+  podTemplate:
+    terminationGracePeriodSeconds: 60
+    topologySpreadConstraints:
+      topology.kubernetes.io/zone: { maxSkew: 1, whenUnsatisfiable: ScheduleAnyway }
+  promExporter:
+    enabled: true
+    podMonitor: { enabled: false }
+  reloader: { enabled: false }
+
+links-svc: {}
+redirect-svc: {}
+analytics-svc: {}
+web: {}

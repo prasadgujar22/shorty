@@ -1,0 +1,10 @@
+apiVersion: v2
+name: analytics-svc
+description: "Shorty analytics-svc: JetStream consumer, idempotent aggregation, stats API."
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+dependencies:
+  - name: shorty-lib
+    version: 0.1.0
+    repository: file://../shorty-lib

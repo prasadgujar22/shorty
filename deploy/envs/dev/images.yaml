@@ -1,0 +1,10 @@
+# Image tags for the dev environment. Updated by CI on every successful main
+# build (see .github/workflows/_build-image.yml); do not edit by hand.
+links-svc:
+  image: { tag: "0.1.0" }
+redirect-svc:
+  image: { tag: "0.1.0" }
+analytics-svc:
+  image: { tag: "0.1.0" }
+web:
+  image: { tag: "0.1.0" }

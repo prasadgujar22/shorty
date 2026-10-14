@@ -1,0 +1,5 @@
+Shorty {{ .Chart.AppVersion }} installed in namespace {{ .Release.Namespace }}.
+
+  UI:        http://{{ .Values.gateway.host | default "localhost" }}:8080/
+  Create:    curl -XPOST http://localhost:8088/api/links -d '{"url":"https://example.com"}'
+  Status:    kubectl -n {{ .Release.Namespace }} get pods,pdb,hpa

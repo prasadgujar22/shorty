@@ -1,0 +1,5 @@
+apiVersion: v2
+name: shorty-lib
+description: Shared templates for Shorty service charts (Deployment, Service, PDB, HPA, ServiceMonitor).
+type: library
+version: 0.1.0

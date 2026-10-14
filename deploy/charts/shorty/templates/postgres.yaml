@@ -1,0 +1,77 @@
+{{- if .Values.postgres.enabled }}
+{{- $pg := .Values.postgres }}
+# CloudNativePG: one database, one schema + role per service. Each service
+# owns its schema and has no privileges on the others'.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: {{ $pg.name }}
+  labels:
+    {{- include "shorty.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  instances: {{ $pg.instances }}
+  imageName: {{ $pg.image }}
+  {{- if gt (int $pg.instances) 1 }}
+  # Synchronous replication: a committed click aggregate survives primary loss.
+  postgresql:
+    synchronous:
+      method: any
+      number: 1
+      dataDurability: preferred   # keep accepting writes if the only standby is down
+    parameters:
+      {{- toYaml $pg.parameters | nindent 6 }}
+  {{- else }}
+  postgresql:
+    parameters:
+      {{- toYaml $pg.parameters | nindent 6 }}
+  {{- end }}
+  storage:
+    size: {{ $pg.storage }}
+  resources:
+    {{- toYaml $pg.resources | nindent 4 }}
+  affinity:
+    enablePodAntiAffinity: true
+    topologyKey: topology.kubernetes.io/zone
+    podAntiAffinityType: preferred
+  primaryUpdateStrategy: unsupervised
+  bootstrap:
+    initdb:
+      database: shorty
+      owner: shorty_owner
+      postInitApplicationSQL:
+        - REVOKE ALL ON DATABASE shorty FROM PUBLIC
+        - REVOKE ALL ON SCHEMA public FROM PUBLIC
+        {{- range $pg.roles }}
+        - CREATE ROLE {{ .name }} NOLOGIN
+        - GRANT CONNECT ON DATABASE shorty TO {{ .name }}
+        - CREATE SCHEMA {{ .name }} AUTHORIZATION {{ .name }}
+        - ALTER ROLE {{ .name }} SET search_path = {{ .name }}
+        {{- end }}
+  managed:
+    roles:
+      {{- range $pg.roles }}
+      - name: {{ .name }}
+        ensure: present
+        login: true
+        connectionLimit: 50
+        passwordSecret:
+          name: {{ .secret }}
+      {{- end }}
+{{- if and $pg.podMonitor (include "shorty.hasMonitoring" .) }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: {{ $pg.name }}
+  labels:
+    {{- include "shorty.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      cnpg.io/cluster: {{ $pg.name }}
+  podMetricsEndpoints:
+    - port: metrics
+{{- end }}
+{{- end }}

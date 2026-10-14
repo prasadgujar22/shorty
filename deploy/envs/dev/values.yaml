@@ -1,0 +1,31 @@
+# dev: 1 replica of everything, smallest footprint. Auto-synced by Argo CD from main.
+gateway:
+  host: ""
+
+postgres:
+  instances: 1
+
+redis:
+  replicas: 1
+
+nats:
+  config:
+    cluster: { enabled: false }
+
+links-svc:
+  replicaCount: 1
+  env:
+    PUBLIC_BASE_URL: http://localhost:8088
+
+redirect-svc:
+  replicaCount: 1
+  env:
+    CLICKS_STREAM_REPLICAS: 1
+
+analytics-svc:
+  replicaCount: 1
+  env:
+    CLICKS_STREAM_REPLICAS: 1
+
+web:
+  replicaCount: 1

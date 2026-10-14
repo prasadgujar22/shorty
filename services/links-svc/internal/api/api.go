@@ -27,7 +27,7 @@ const (
 // API holds handler dependencies.
 type API struct {
 	Store   links.Store
-	BaseURL string // public origin used to build short_url, e.g. http://localhost:8080
+	BaseURL string // public origin used to build short_url, e.g. http://localhost:8088
 	Log     *slog.Logger
 	created *prometheus.CounterVec
 }

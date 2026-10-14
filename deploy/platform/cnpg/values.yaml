@@ -1,0 +1,10 @@
+replicaCount: 1
+resources:
+  requests: { cpu: 50m, memory: 96Mi }
+  limits: { memory: 256Mi }
+monitoring:
+  podMonitorEnabled: false
+config:
+  data:
+    # Watch all namespaces (dev and ha environments).
+    WATCH_NAMESPACE: ""

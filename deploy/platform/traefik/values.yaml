@@ -1,0 +1,57 @@
+# Gateway: 2 replicas spread across zones, PDB, graceful entrypoint shutdown.
+deployment:
+  replicas: 2
+  terminationGracePeriodSeconds: 30
+podDisruptionBudget:
+  enabled: true
+  maxUnavailable: 1
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate: { maxUnavailable: 0, maxSurge: 1 }
+topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: topology.kubernetes.io/zone
+    whenUnsatisfiable: ScheduleAnyway
+    labelSelector:
+      matchLabels: { app.kubernetes.io/name: traefik }
+resources:
+  requests: { cpu: 100m, memory: 64Mi }
+  limits: { memory: 256Mi }
+service:
+  type: LoadBalancer   # k3s servicelb; k3d maps host :8080 -> :80
+ports:
+  web:
+    port: 8000
+    exposedPort: 80
+    transport:
+      lifeCycle:
+        # On SIGTERM keep accepting for 5s (while the LB drops us), then
+        # give in-flight requests up to 10s.
+        requestAcceptGraceTimeout: 5s
+        graceTimeOut: 10s
+      respondingTimeouts:
+        readTimeout: 30s
+        idleTimeout: 90s
+  websecure:
+    expose: { default: false }
+providers:
+  kubernetesCRD:
+    enabled: true
+    allowCrossNamespace: false
+  kubernetesIngress:
+    enabled: true
+ingressRoute:
+  dashboard: { enabled: false }
+metrics:
+  prometheus:
+    addEntryPointsLabels: true
+    addRoutersLabels: true
+    addServicesLabels: true
+    # Enabled by scripts/platform.sh once the Prometheus Operator CRDs exist.
+    serviceMonitor:
+      enabled: false
+log: { level: INFO, format: json }
+accessLog: { enabled: false }
+global:
+  checkNewVersion: false
+  sendAnonymousUsage: false

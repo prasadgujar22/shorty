@@ -1,0 +1,73 @@
+image:
+  registry: ghcr.io/prasadgujar22
+  repository: shorty-web
+  tag: ""            # defaults to Chart.appVersion; CI pins a git SHA in deploy/envs/*/images.yaml
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+ports: { http: 8080, admin: 9090 }
+securityContext: { runAsUser: 101 }
+goRuntime: null   # not a Go service
+
+env: {}
+secretEnv: []
+
+probes:
+  startup:   { path: /healthz, periodSeconds: 2,  failureThreshold: 15 }
+  liveness:  { path: /healthz, periodSeconds: 10, failureThreshold: 3 }
+  readiness: { path: /readyz,  periodSeconds: 5,  failureThreshold: 2 }
+
+
+strategy: { maxSurge: 1, maxUnavailable: 0 }
+topologySpread: { enabled: true, maxSkew: 1, zoneWhenUnsatisfiable: DoNotSchedule }
+pdb: { enabled: false, maxUnavailable: 1 }
+hpa:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 6
+  cpuUtilization: 70
+  rps: { enabled: false, metric: shorty_http_requests_per_second, averageValue: "500" }
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies: [{ type: Percent, value: 100, periodSeconds: 15 }]
+    scaleDown:
+      stabilizationWindowSeconds: 120
+      policies: [{ type: Pods, value: 1, periodSeconds: 60 }]
+podAnnotations: {}
+
+component: frontend
+# Nginx: graceful "quit" after the endpoint has been removed (SIGTERM would be a fast shutdown).
+shutdown:
+  preStopExec: ["/bin/sh", "-c", "sleep 5; nginx -s quit; while pgrep -x nginx >/dev/null; do sleep 1; done"]
+  preStopSleepSeconds: 5
+  drainDelay: 0s
+  timeout: 0s
+  terminationGracePeriodSeconds: 30
+resources:
+  requests: { cpu: 10m, memory: 16Mi }
+  limits: { cpu: 200m, memory: 64Mi }
+# readOnlyRootFilesystem: Nginx needs writable cache/pid dirs.
+volumes:
+  - { name: cache, emptyDir: { sizeLimit: 32Mi } }
+  - { name: tmp, emptyDir: { sizeLimit: 8Mi } }
+volumeMounts:
+  - { name: cache, mountPath: /var/cache/nginx }
+  - { name: tmp, mountPath: /tmp }
+service:
+  port: 8080
+  extraPorts:
+    - { name: metrics, port: 9113, targetPort: metrics }
+serviceMonitor: { enabled: true, port: metrics, interval: 15s }
+extraContainers:
+  - name: exporter
+    image: nginx/nginx-prometheus-exporter:1.4.2
+    args: ["--nginx.scrape-uri=http://127.0.0.1:9090/stub_status"]
+    ports: [{ name: metrics, containerPort: 9113 }]
+    resources:
+      requests: { cpu: 5m, memory: 12Mi }
+      limits: { cpu: 50m, memory: 32Mi }
+    securityContext:
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      capabilities: { drop: [ALL] }

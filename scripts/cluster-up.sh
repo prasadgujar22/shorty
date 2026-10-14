@@ -20,4 +20,4 @@ log "waiting for core addons (coredns, metrics-server, local-path)"
 for d in coredns metrics-server local-path-provisioner; do
   kc -n kube-system rollout status "deploy/$d" --timeout=180s
 done
-log "cluster ready: context ${KUBE_CONTEXT}, registry ${REGISTRY_HOST}, ingress http://localhost:8080"
+log "cluster ready: context ${KUBE_CONTEXT}, registry ${REGISTRY_HOST}, ingress http://localhost:8088"

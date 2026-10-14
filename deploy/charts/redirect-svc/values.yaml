@@ -1,0 +1,65 @@
+image:
+  registry: ghcr.io/prasadgujar22
+  repository: shorty-redirect-svc
+  tag: ""            # defaults to Chart.appVersion; CI pins a git SHA in deploy/envs/*/images.yaml
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+ports: { http: 8080, admin: 9090 }
+service: { port: 8080 }
+securityContext: { runAsUser: 65532 }
+goRuntime: { memLimitRatio: "0.9" }
+
+env: {}
+secretEnv: []
+
+probes:
+  startup:   { path: /healthz, periodSeconds: 2,  failureThreshold: 60 }   # up to 2 min for migrations
+  liveness:  { path: /healthz, periodSeconds: 10, failureThreshold: 3 }
+  readiness: { path: /readyz,  periodSeconds: 5,  failureThreshold: 2 }
+
+# preStop sleep -> SIGTERM -> app drain delay (readyz=503) -> http.Server.Shutdown
+# terminationGracePeriodSeconds > preStop + drainDelay + timeout
+shutdown:
+  preStopSleepSeconds: 5
+  drainDelay: 3s
+  timeout: 15s
+  terminationGracePeriodSeconds: 30
+
+strategy: { maxSurge: 1, maxUnavailable: 0 }
+topologySpread: { enabled: true, maxSkew: 1, zoneWhenUnsatisfiable: DoNotSchedule }
+pdb: { enabled: false, maxUnavailable: 1 }
+hpa:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 6
+  cpuUtilization: 70
+  rps: { enabled: false, metric: shorty_http_requests_per_second, averageValue: "500" }
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies: [{ type: Percent, value: 100, periodSeconds: 15 }]
+    scaleDown:
+      stabilizationWindowSeconds: 120
+      policies: [{ type: Pods, value: 1, periodSeconds: 60 }]
+serviceMonitor: { enabled: true, port: admin, interval: 15s }
+podAnnotations: {}
+volumes: []
+volumeMounts: []
+extraContainers: []
+
+component: edge
+env:
+  LINKS_URL: http://links-svc:8080
+  LINKS_TIMEOUT: 500ms
+  REDIS_ADDR: redis:6379
+  NATS_URL: nats://nats:4222
+  CACHE_TTL: 1h
+  CACHE_NEGATIVE_TTL: 30s
+  CLICK_BUFFER_SIZE: 100000
+  CLICK_PUBLISH_WORKERS: 16
+  CLICKS_STREAM_REPLICAS: 1
+  LOG_LEVEL: info
+resources:
+  requests: { cpu: 100m, memory: 48Mi }
+  limits: { cpu: "1", memory: 128Mi }

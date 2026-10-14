@@ -1,0 +1,23 @@
+apiVersion: v2
+name: shorty
+description: "Shorty umbrella chart: services, data tier (CloudNativePG, Redis, NATS JetStream) and gateway routes."
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+dependencies:
+  - name: links-svc
+    version: 0.1.0
+    repository: file://../links-svc
+  - name: redirect-svc
+    version: 0.1.0
+    repository: file://../redirect-svc
+  - name: analytics-svc
+    version: 0.1.0
+    repository: file://../analytics-svc
+  - name: web
+    version: 0.1.0
+    repository: file://../web
+  - name: nats
+    version: 2.15.1
+    repository: https://nats-io.github.io/k8s/helm/charts/
+    condition: nats.enabled

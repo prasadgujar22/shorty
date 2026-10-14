@@ -36,7 +36,7 @@ func run() error {
 	memlimit.Apply(log, env.Float("GOMEMLIMIT_RATIO", 0.9))
 	opts := server.OptionsFromEnv(env)
 	dbCfg := pg.ConfigFromEnv(env, "links")
-	baseURL := env.String("PUBLIC_BASE_URL", "http://localhost:8080")
+	baseURL := env.String("PUBLIC_BASE_URL", "http://localhost:8088")
 	startupTimeout := env.Duration("STARTUP_TIMEOUT", 90*time.Second)
 	if err := env.Err(); err != nil {
 		return err

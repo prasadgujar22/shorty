@@ -1,0 +1,6 @@
+dependencies:
+- name: shorty-lib
+  repository: file://../shorty-lib
+  version: 0.1.0
+digest: sha256:57ec2c86cb443c3b68f80aa2b40509cd5d2c5d04214c2da9ac7471a5e8a574c3
+generated: "2026-10-14T10:12:55.917429+05:30"
