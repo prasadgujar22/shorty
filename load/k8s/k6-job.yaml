@@ -1,0 +1,39 @@
+# In-cluster load generator: same script, but traffic goes pod -> Traefik
+# Service, bypassing macOS -> Docker Desktop port proxy -> k3d serverlb.
+# Runs on the control-plane node (tolerates its taint) so it doesn't share
+# an agent with the system under test.
+#   kubectl create configmap k6-script -n shorty-ha --from-file=load/redirect.js
+#   kubectl apply -n shorty-ha -f load/k8s/k6-job.yaml && kubectl logs -n shorty-ha -f job/k6
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: k6
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 600
+  template:
+    spec:
+      restartPolicy: Never
+      nodeSelector: { node-role.kubernetes.io/control-plane: "true" }
+      tolerations:
+        - { key: node-role.kubernetes.io/control-plane, operator: Exists, effect: NoSchedule }
+      securityContext: { runAsNonRoot: true, runAsUser: 12345, seccompProfile: { type: RuntimeDefault } }
+      containers:
+        - name: k6
+          image: grafana/k6:2.3.0
+          args: ["run", "-q", "/scripts/redirect.js"]
+          env:
+            - { name: BASE_URL, value: "http://traefik.traefik.svc.cluster.local" }
+            - { name: HOST, value: "ha.localhost" }
+            - { name: RATE, value: "800" }
+            - { name: DURATION, value: "150s" }
+            - { name: LINKS, value: "200" }
+            - { name: SUMMARY_FILE, value: "/tmp/summary.json" }
+          resources:
+            requests: { cpu: 500m, memory: 256Mi }
+            limits: { memory: 1Gi }
+          securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: [ALL] } }
+          volumeMounts: [{ name: scripts, mountPath: /scripts }]
+      volumes:
+        - name: scripts
+          configMap: { name: k6-script }
