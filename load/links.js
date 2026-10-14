@@ -49,5 +49,5 @@ export function handleSummary(data) {
   const d = data.metrics.http_req_duration.values;
   const out = { rps: Math.round(data.metrics.http_reqs.values.rate), p50_ms: d.med, p95_ms: d['p(95)'], p99_ms: d['p(99)'], max_ms: d.max,
     failed_rate: data.metrics.http_req_failed ? data.metrics.http_req_failed.values.rate : 0 };
-  return { [__ENV.SUMMARY_FILE || `load/results/${RUN_ID}.json`]: JSON.stringify(out), stdout: JSON.stringify(out) + '\n' };
+  return { [__ENV.SUMMARY_FILE || `load/results/${RUN_ID}.json`]: JSON.stringify(out), stdout: 'SUMMARY ' + JSON.stringify(out) + '\n' };
 }

@@ -25,18 +25,34 @@ const headers = HOST ? { Host: HOST } : {};
 const redirects = new Counter('shorty_redirects_302');
 const unexpected = new Rate('shorty_unexpected_status');
 
+// RAMP="300:30s,2400:60s,2400:120s,300:30s" switches to a ramping arrival
+// rate (target rps:duration per stage), used for the HPA experiment.
+const RAMP = __ENV.RAMP || '';
+const stages = RAMP ? RAMP.split(',').map((s) => ({ target: Number(s.split(':')[0]), duration: s.split(':')[1] })) : [];
+const peak = stages.length ? Math.max(...stages.map((s) => s.target)) : RATE;
+
 export const options = {
   discardResponseBodies: true,
   scenarios: {
-    redirect: {
-      executor: 'constant-arrival-rate',
-      rate: RATE,
-      timeUnit: '1s',
-      duration: DURATION,
-      preAllocatedVUs: Math.max(50, Math.ceil(RATE / 10)),
-      maxVUs: Math.max(200, RATE),
-      gracefulStop: '10s'
-    }
+    redirect: RAMP
+      ? {
+          executor: 'ramping-arrival-rate',
+          startRate: stages[0].target,
+          timeUnit: '1s',
+          stages,
+          preAllocatedVUs: Math.max(50, Math.ceil(peak / 10)),
+          maxVUs: Math.max(200, peak),
+          gracefulStop: '10s'
+        }
+      : {
+          executor: 'constant-arrival-rate',
+          rate: RATE,
+          timeUnit: '1s',
+          duration: DURATION,
+          preAllocatedVUs: Math.max(50, Math.ceil(RATE / 10)),
+          maxVUs: Math.max(200, RATE),
+          gracefulStop: '10s'
+        }
   },
   summaryTrendStats: ['avg', 'min', 'med', 'p(90)', 'p(95)', 'p(99)', 'max'],
   thresholds: {
@@ -92,8 +108,8 @@ export function handleSummary(data) {
   const reqs = data.metrics.http_reqs;
   const out = {
     run_id: RUN_ID,
-    rate_target: RATE,
-    duration: DURATION,
+    rate_target: RAMP ? `ramp ${RAMP}` : RATE,
+    duration: RAMP ? 'ramp' : DURATION,
     requests: reqs ? reqs.values.count : 0,
     rps: reqs ? Math.round(reqs.values.rate) : 0,
     redirects_302: data.metrics.shorty_redirects_302 ? data.metrics.shorty_redirects_302.values.count : 0,
@@ -108,5 +124,6 @@ export function handleSummary(data) {
   const file = __ENV.SUMMARY_FILE || `load/results/${RUN_ID}.json`;
   const line = `run ${RUN_ID}: ${out.rps} rps, p50 ${out.p50_ms.toFixed(2)}ms p95 ${out.p95_ms.toFixed(2)}ms p99 ${out.p99_ms.toFixed(2)}ms, ` +
     `unexpected ${(out.unexpected_rate * 100).toFixed(3)}%, 302s ${out.redirects_302}\n`;
-  return { [file]: JSON.stringify(out, null, 2), stdout: line };
+  // In-cluster runs (load/tune.sh) read the JSON from the pod log.
+  return { [file]: JSON.stringify(out, null, 2), stdout: line + 'SUMMARY ' + JSON.stringify(out) + '\n' };
 }
