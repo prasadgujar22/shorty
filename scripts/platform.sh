@@ -24,13 +24,17 @@ fi
 has_monitoring=false
 kc get crd servicemonitors.monitoring.coreos.com >/dev/null 2>&1 && has_monitoring=true
 
+if argo_managed traefik; then log "traefik: managed by Argo CD (platform-traefik), skipping"; else
 log "traefik ${TRAEFIK_CHART}"
 "${H[@]}" traefik traefik/traefik --version "$TRAEFIK_CHART" -n traefik --create-namespace \
-  -f "$P/traefik/values.yaml" --set metrics.prometheus.serviceMonitor.enabled=$has_monitoring
+  -f "$P/traefik/values.yaml" --set metrics.prometheus.serviceMonitor.enabled="$has_monitoring"
+fi
 
+if argo_managed cnpg; then log "cnpg: managed by Argo CD (platform-cnpg), skipping"; else
 log "cloudnative-pg ${CNPG_CHART}"
 "${H[@]}" cnpg cnpg/cloudnative-pg --version "$CNPG_CHART" -n cnpg-system --create-namespace \
-  -f "$P/cnpg/values.yaml" --set monitoring.podMonitorEnabled=$has_monitoring
+  -f "$P/cnpg/values.yaml" --set monitoring.podMonitorEnabled="$has_monitoring"
+fi
 
 kc -n traefik get pods -o wide
 kc -n cnpg-system get pods

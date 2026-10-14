@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-prometheus-adapter
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  project: platform
+  sources:
+    - repoURL: https://prometheus-community.github.io/helm-charts
+      chart: prometheus-adapter
+      targetRevision: "5.3.0"
+      helm:
+        releaseName: prometheus-adapter
+        valueFiles: [$values/deploy/platform/prometheus-adapter/values.yaml]
+    - repoURL: https://github.com/prasadgujar22/shorty.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated: { prune: false, selfHeal: true }
+    syncOptions: [CreateNamespace=true, ServerSideApply=true]

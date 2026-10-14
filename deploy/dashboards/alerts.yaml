@@ -1,0 +1,56 @@
+# Shorty alerts (symptom-based, evaluated by Prometheus; no Alertmanager locally).
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: shorty
+  labels:
+    app.kubernetes.io/part-of: shorty
+spec:
+  groups:
+    - name: shorty.slo
+      rules:
+        - record: shorty:http_requests:rate5m
+          expr: sum by (namespace, job) (rate(shorty_http_requests_total[5m]))
+        - record: shorty:http_errors:ratio5m
+          expr: |
+            sum by (namespace, job) (rate(shorty_http_requests_total{code=~"5.."}[5m]))
+              / clamp_min(sum by (namespace, job) (rate(shorty_http_requests_total[5m])), 1e-9)
+        - record: shorty:http_latency:p99_5m
+          expr: histogram_quantile(0.99, sum by (namespace, job, le) (rate(shorty_http_request_duration_seconds_bucket[5m])))
+        - alert: ShortyHighErrorRate
+          expr: shorty:http_errors:ratio5m > 0.01 and shorty:http_requests:rate5m > 1
+          for: 5m
+          labels: { severity: page }
+          annotations:
+            summary: "{{ $labels.job }} in {{ $labels.namespace }}: {{ $value | humanizePercentage }} 5xx"
+        - alert: ShortyRedirectSlow
+          expr: shorty:http_latency:p99_5m{job="redirect-svc"} > 0.05
+          for: 10m
+          labels: { severity: ticket }
+          annotations:
+            summary: "redirect-svc p99 {{ $value | humanizeDuration }} (SLO 50ms)"
+    - name: shorty.pipeline
+      rules:
+        - alert: ShortyClicksDropped
+          expr: increase(shorty_clicks_dropped_total[10m]) > 0
+          labels: { severity: page }
+          annotations:
+            summary: "{{ $labels.pod }} dropped {{ $value }} click events (buffer full or killed during NATS outage)"
+        - alert: ShortyClickBufferFilling
+          expr: shorty_clicks_buffer_depth / shorty_clicks_buffer_capacity > 0.5
+          for: 2m
+          labels: { severity: page }
+          annotations:
+            summary: "{{ $labels.pod }} click buffer {{ $value | humanizePercentage }} full: is NATS reachable?"
+        - alert: ShortyAnalyticsLagging
+          expr: max by (namespace) (shorty_analytics_consumer_pending) > 10000 or max by (namespace) (shorty_analytics_last_event_age_seconds) > 120
+          for: 5m
+          labels: { severity: ticket }
+          annotations:
+            summary: "analytics in {{ $labels.namespace }} is behind (pending/freshness {{ $value }})"
+        - alert: ShortyRedisBreakerOpen
+          expr: max by (namespace) (shorty_redis_breaker_open) == 1
+          for: 2m
+          labels: { severity: ticket }
+          annotations:
+            summary: "redirect-svc is bypassing Redis in {{ $labels.namespace }} (cache down)"

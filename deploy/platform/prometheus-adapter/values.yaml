@@ -1,0 +1,22 @@
+# Serves custom.metrics.k8s.io for the redirect-svc HPA. Resource metrics stay
+# with metrics-server (k3s), so only custom rules are configured here.
+prometheus:
+  url: http://kps-prometheus.monitoring.svc
+  port: 9090
+resources:
+  requests: { cpu: 20m, memory: 48Mi }
+  limits: { memory: 160Mi }
+rules:
+  default: false
+  custom:
+    # Per-pod request rate from the RED middleware, e.g. for
+    # pods/shorty_http_requests_per_second in the HPA.
+    - seriesQuery: 'shorty_http_requests_total{namespace!="",pod!=""}'
+      resources:
+        overrides:
+          namespace: { resource: namespace }
+          pod: { resource: pod }
+      name:
+        matches: "^shorty_http_requests_total$"
+        as: "shorty_http_requests_per_second"
+      metricsQuery: 'sum(rate(<<.Series>>{<<.LabelMatchers>>}[1m])) by (<<.GroupBy>>)'

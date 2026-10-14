@@ -1,0 +1,25 @@
+# Grafana dashboards (ConfigMaps picked up by the Grafana sidecar) and Shorty
+# alert rules. Applied by scripts/observability.sh and by the Argo CD app
+# platform-dashboards.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: monitoring
+generatorOptions:
+  disableNameSuffixHash: true
+  labels:
+    grafana_dashboard: "1"
+  annotations:
+    grafana_folder: Shorty
+configMapGenerator:
+  - name: dashboard-shorty-overview
+    files: [overview.json]
+  - name: dashboard-shorty-links-svc
+    files: [links-svc.json]
+  - name: dashboard-shorty-redirect-svc
+    files: [redirect-svc.json]
+  - name: dashboard-shorty-analytics-svc
+    files: [analytics-svc.json]
+  - name: dashboard-shorty-web
+    files: [web.json]
+resources:
+  - alerts.yaml

@@ -20,4 +20,8 @@ need() {
 kc() { kubectl --context "$KUBE_CONTEXT" "$@"; }
 
 # Capture first: `k3d ... | grep -q` + pipefail reports false when grep exits early (SIGPIPE).
+# True when an Argo CD Application already manages this platform component:
+# from then on, change it in Git (deploy/platform/<name>/values.yaml).
+argo_managed() { kc -n argocd get application "platform-$1" >/dev/null 2>&1; }
+
 cluster_exists() { local out; out="$(k3d cluster list -o json 2>/dev/null || true)"; [[ "$out" == *"\"name\":\"${CLUSTER_NAME}\""* ]]; }

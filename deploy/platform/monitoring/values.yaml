@@ -1,0 +1,131 @@
+# kube-prometheus-stack, trimmed for a laptop: Prometheus + Grafana +
+# kube-state-metrics + node-exporter + operator. No Alertmanager (rules still
+# evaluate; firing alerts are visible in Prometheus/Grafana).
+fullnameOverride: kps
+
+crds:
+  enabled: true
+
+alertmanager:
+  enabled: false
+
+defaultRules:
+  create: true
+  rules:
+    alertmanager: false
+    etcd: false
+    configReloaders: false
+    kubeApiserverAvailability: false
+    kubeApiserverBurnrate: false
+    kubeApiserverHistogram: false
+    kubeApiserverSlos: false
+    kubeControllerManager: false
+    kubeProxy: false
+    kubeSchedulerAlerting: false
+    kubeSchedulerRecording: false
+    windows: false
+
+# k3s runs the control plane in one process; skip the separate scrapes.
+kubeEtcd: { enabled: false }
+kubeControllerManager: { enabled: false }
+kubeScheduler: { enabled: false }
+kubeProxy: { enabled: false }
+
+prometheus:
+  prometheusSpec:
+    scrapeInterval: 15s
+    evaluationInterval: 15s
+    retention: 2d
+    retentionSize: 1800MB
+    # Discover every ServiceMonitor/PodMonitor/PrometheusRule in the cluster.
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    probeSelectorNilUsesHelmValues: false
+    enableFeatures: [native-histograms]
+    resources:
+      requests: { cpu: 200m, memory: 512Mi }
+      limits: { memory: 1536Mi }
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: [ReadWriteOnce]
+          resources: { requests: { storage: 2Gi } }
+
+prometheusOperator:
+  resources:
+    requests: { cpu: 20m, memory: 48Mi }
+    limits: { memory: 192Mi }
+  prometheusConfigReloader:
+    resources:
+      requests: { cpu: 5m, memory: 16Mi }
+      limits: { memory: 48Mi }
+
+kube-state-metrics:
+  resources:
+    requests: { cpu: 10m, memory: 32Mi }
+    limits: { memory: 128Mi }
+
+prometheus-node-exporter:
+  resources:
+    requests: { cpu: 10m, memory: 16Mi }
+    limits: { memory: 64Mi }
+
+grafana:
+  admin:
+    existingSecret: grafana-admin   # created by scripts/observability.sh (not in Git)
+    userKey: admin-user
+    passwordKey: admin-password
+  # Read-only anonymous access for local viewing; log in as admin to edit.
+  grafana.ini:
+    auth.anonymous: { enabled: true, org_role: Viewer }
+    server: { root_url: "http://grafana.localhost:8088" }
+    analytics: { check_for_updates: false, reporting_enabled: false }
+  persistence: { enabled: false }
+  resources:
+    requests: { cpu: 25m, memory: 128Mi }
+    limits: { memory: 384Mi }
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      labelValue: "1"
+      searchNamespace: ALL
+      folderAnnotation: grafana_folder
+      provider: { foldersFromFilesStructure: true }
+    datasources:
+      enabled: true
+  additionalDataSources:
+    - name: Loki
+      uid: loki
+      type: loki
+      access: proxy
+      url: http://loki.monitoring.svc:3100
+      jsonData: { maxLines: 1000 }
+  extraObjects: []
+
+extraManifests:
+  - apiVersion: traefik.io/v1alpha1
+    kind: IngressRoute
+    metadata:
+      name: grafana
+      namespace: monitoring
+    spec:
+      entryPoints: [web]
+      routes:
+        - kind: Rule
+          match: Host(`grafana.localhost`)
+          priority: 5000
+          services: [{ name: kps-grafana, port: 80 }]
+  - apiVersion: traefik.io/v1alpha1
+    kind: IngressRoute
+    metadata:
+      name: prometheus
+      namespace: monitoring
+    spec:
+      entryPoints: [web]
+      routes:
+        - kind: Rule
+          match: Host(`prometheus.localhost`)
+          priority: 5000
+          services: [{ name: kps-prometheus, port: 9090 }]

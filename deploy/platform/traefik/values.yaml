@@ -47,9 +47,9 @@ metrics:
     addEntryPointsLabels: true
     addRoutersLabels: true
     addServicesLabels: true
-    # Enabled by scripts/platform.sh once the Prometheus Operator CRDs exist.
+    # Requires the Prometheus Operator CRDs (observability is installed first).
     serviceMonitor:
-      enabled: false
+      enabled: true
 log: { level: INFO, format: json }
 accessLog: { enabled: false }
 global:

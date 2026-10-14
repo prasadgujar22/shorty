@@ -69,7 +69,7 @@ nats:
       topology.kubernetes.io/zone: { maxSkew: 1, whenUnsatisfiable: ScheduleAnyway }
   promExporter:
     enabled: true
-    podMonitor: { enabled: false }
+    podMonitor: { enabled: true }
   reloader: { enabled: false }
 
 links-svc: {}
