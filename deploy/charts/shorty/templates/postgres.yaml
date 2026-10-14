@@ -41,7 +41,9 @@ spec:
       database: shorty
       owner: shorty_owner
       postInitApplicationSQL:
-        - REVOKE ALL ON DATABASE shorty FROM PUBLIC
+        # Keep CONNECT for PUBLIC (CNPG's metrics exporter needs it); isolation
+        # comes from per-service schema ownership + no rights on schema public.
+        - REVOKE CREATE, TEMPORARY ON DATABASE shorty FROM PUBLIC
         - REVOKE ALL ON SCHEMA public FROM PUBLIC
         {{- range $pg.roles }}
         - CREATE ROLE {{ .name }} NOLOGIN
