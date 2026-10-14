@@ -1,0 +1,58 @@
+# Argo CD, trimmed for a laptop: single replicas, no Dex/notifications,
+# HTTP UI behind Traefik at http://argocd.localhost:8088.
+global:
+  domain: argocd.localhost:8088
+
+configs:
+  params:
+    server.insecure: true            # TLS terminates nowhere locally; fine for a laptop
+    controller.diff.server.side: "true"
+  cm:
+    # Poll Git every 60s (no inbound webhooks are possible behind a laptop NAT).
+    timeout.reconciliation: 60s
+    admin.enabled: "true"
+    exec.enabled: "false"
+    statusbadge.enabled: "true"
+    # Treat CNPG/NATS defaulted fields as non-drift.
+    resource.compareoptions: |
+      ignoreAggregatedRoles: true
+      ignoreResourceStatusField: all
+
+dex:
+  enabled: false
+notifications:
+  enabled: false
+
+controller:
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { memory: 768Mi }
+server:
+  resources:
+    requests: { cpu: 25m, memory: 64Mi }
+    limits: { memory: 256Mi }
+repoServer:
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+    limits: { memory: 512Mi }
+applicationSet:
+  resources:
+    requests: { cpu: 10m, memory: 32Mi }
+    limits: { memory: 128Mi }
+redis:
+  resources:
+    requests: { cpu: 10m, memory: 32Mi }
+    limits: { memory: 128Mi }
+
+extraObjects:
+  - apiVersion: traefik.io/v1alpha1
+    kind: IngressRoute
+    metadata:
+      name: argocd-server
+    spec:
+      entryPoints: [web]
+      routes:
+        - kind: Rule
+          match: Host(`argocd.localhost`)
+          priority: 5000
+          services: [{ name: argocd-server, port: 80 }]

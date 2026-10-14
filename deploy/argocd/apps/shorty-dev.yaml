@@ -1,0 +1,37 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: shorty-dev
+  namespace: argocd
+  finalizers: [resources-finalizer.argocd.argoproj.io]
+  annotations:
+    # Auto-syncs every commit on main (CI bumps envs/dev/images.yaml).
+    argocd.argoproj.io/sync-wave: "10"
+spec:
+  project: shorty
+  source:
+    repoURL: https://github.com/prasadgujar22/shorty.git
+    targetRevision: main
+    path: deploy/charts/shorty
+    helm:
+      releaseName: shorty
+      valueFiles:
+        - ../../envs/dev/values.yaml
+        - ../../envs/dev/images.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: shorty-dev
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - PruneLast=true
+    retry:
+      limit: 10
+      backoff: { duration: 10s, factor: 2, maxDuration: 3m }
+  ignoreDifferences:
+    # The HPA owns replicas when enabled (the chart omits the field then).
+    - group: apps
+      kind: Deployment
+      jqPathExpressions: [.spec.replicas]

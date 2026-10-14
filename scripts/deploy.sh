@@ -24,6 +24,8 @@ helm --kube-context "$KUBE_CONTEXT" upgrade --install shorty "$ROOT_DIR/deploy/c
   --set redirect-svc.image.tag="$tag" \
   --set analytics-svc.image.tag="$tag" \
   --set web.image.tag="$tag" \
+  --set gateway.host="${HOST:-}" \
+  --set links-svc.env.PUBLIC_BASE_URL="${BASE_URL:-http://localhost:8088}" \
   --wait --timeout 10m --hide-notes
 
 kc -n "$ns" get pods -o wide

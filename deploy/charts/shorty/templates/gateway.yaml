@@ -1,5 +1,7 @@
 {{- $g := .Values.gateway }}
 {{- $host := ternary (printf "Host(`%s`) && " $g.host) "" (ne $g.host "") }}
+{{- /* Host-specific routes must beat host-less ones from other envs. */}}
+{{- $p := ternary 1000 0 (ne $g.host "") }}
 # Traefik routes. Explicit priorities make the catch-all /{slug} lose to
 # every more specific route regardless of rule length.
 apiVersion: traefik.io/v1alpha1
@@ -26,20 +28,20 @@ spec:
   routes:
     - kind: Rule
       match: {{ printf "%sPathPrefix(`/api/links`)" $host | quote }}
-      priority: 100
+      priority: {{ add $p 100 }}
       services: [{ name: links-svc, port: 8080 }]
     - kind: Rule
       match: {{ printf "%sPathPrefix(`/api/stats`)" $host | quote }}
-      priority: 100
+      priority: {{ add $p 100 }}
       middlewares: [{ name: retry-idempotent }]
       services: [{ name: analytics-svc, port: 8080 }]
     - kind: Rule
       match: {{ printf "%s(Path(`/`) || PathPrefix(`/_app/`) || PathPrefix(`/s/`) || Path(`/favicon.svg`) || Path(`/robots.txt`))" $host | quote }}
-      priority: 90
+      priority: {{ add $p 90 }}
       middlewares: [{ name: retry-idempotent }]
       services: [{ name: web, port: 8080 }]
     - kind: Rule
       match: {{ printf "%sPathPrefix(`/`)" $host | quote }}
-      priority: 1
+      priority: {{ add $p 1 }}
       middlewares: [{ name: retry-idempotent }]
       services: [{ name: redirect-svc, port: 8080 }]

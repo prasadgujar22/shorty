@@ -1,6 +1,7 @@
 # dev: 1 replica of everything, smallest footprint. Auto-synced by Argo CD from main.
 gateway:
-  host: ""
+  # Argo CD-managed env: own hostname (make deploy overrides this to "").
+  host: dev.localhost
 
 postgres:
   instances: 1
@@ -15,7 +16,7 @@ nats:
 links-svc:
   replicaCount: 1
   env:
-    PUBLIC_BASE_URL: http://localhost:8088
+    PUBLIC_BASE_URL: http://dev.localhost:8088
 
 redirect-svc:
   replicaCount: 1

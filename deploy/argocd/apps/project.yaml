@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: shorty
+  namespace: argocd
+spec:
+  description: Shorty application environments
+  sourceRepos:
+    - https://github.com/prasadgujar22/shorty.git
+    - https://nats-io.github.io/k8s/helm/charts/
+  destinations:
+    - { server: https://kubernetes.default.svc, namespace: shorty-dev }
+    - { server: https://kubernetes.default.svc, namespace: shorty-ha }
+  clusterResourceWhitelist: []          # app envs create no cluster-scoped objects
+  namespaceResourceBlacklist:
+    - { group: "", kind: ResourceQuota }
+  orphanedResources:
+    warn: true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: platform
+  namespace: argocd
+spec:
+  description: Cluster platform (gateway, operators, observability)
+  sourceRepos: ["*"]
+  destinations:
+    - { server: https://kubernetes.default.svc, namespace: "*" }
+  clusterResourceWhitelist:
+    - { group: "*", kind: "*" }

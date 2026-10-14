@@ -24,7 +24,7 @@ for env in dev ha; do
 done
 # Argo CD manifests (if present).
 if [[ -d "$ROOT_DIR/deploy/argocd" ]] && compgen -G "$ROOT_DIR/deploy/argocd/**/*.yaml" >/dev/null; then
-  find "$ROOT_DIR/deploy/argocd" -name '*.yaml' -print0 | xargs -0 kubeconform -strict -summary \
+  find "$ROOT_DIR/deploy/argocd" -name '*.yaml' -not -path '*/bootstrap/*' -print0 | xargs -0 kubeconform -strict -summary \
     -schema-location default \
     -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'
 fi

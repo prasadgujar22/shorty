@@ -1,0 +1,26 @@
+# Adopts the release installed by scripts/platform.sh (same name/namespace).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-traefik
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: platform
+  sources:
+    - repoURL: https://traefik.github.io/charts
+      chart: traefik
+      targetRevision: "41.7.1"
+      helm:
+        releaseName: traefik
+        valueFiles: [$values/deploy/platform/traefik/values.yaml]
+    - repoURL: https://github.com/prasadgujar22/shorty.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: traefik
+  syncPolicy:
+    automated: { prune: false, selfHeal: true }
+    syncOptions: [CreateNamespace=true, ServerSideApply=true]
