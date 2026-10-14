@@ -1,4 +1,7 @@
 dependencies:
+- name: shorty-lib
+  repository: file://../shorty-lib
+  version: 0.1.0
 - name: links-svc
   repository: file://../links-svc
   version: 0.1.0
@@ -14,5 +17,5 @@ dependencies:
 - name: nats
   repository: https://nats-io.github.io/k8s/helm/charts/
   version: 2.15.1
-digest: sha256:3e6249413812831e80c8af3a49f320e54579866741e68be64b0c82fb8d9b3a09
-generated: "2026-10-14T10:14:05.873666+05:30"
+digest: sha256:c60370a7e1eb3c8a048ba0ef81fb189aa27a3e32ce351b7cc7670af21842ca24
+generated: "2026-10-14T10:49:21.211057+05:30"

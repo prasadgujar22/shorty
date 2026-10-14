@@ -5,6 +5,12 @@ type: application
 version: 0.1.0
 appVersion: "0.1.0"
 dependencies:
+  # Also declared here (not only in each service chart): Argo CD runs
+  # `helm dependency build` on this chart only, and named templates are
+  # global across the chart tree, so the subcharts resolve shorty-lib.* here.
+  - name: shorty-lib
+    version: 0.1.0
+    repository: file://../shorty-lib
   - name: links-svc
     version: 0.1.0
     repository: file://../links-svc
