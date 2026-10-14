@@ -3,7 +3,7 @@
 links-svc:
   image: {tag: "d71cf0c"}
 redirect-svc:
-  image: {tag: "d71cf0c"}
+  image: {tag: "7c027e6"}
 analytics-svc:
   image: {tag: "d71cf0c"}
 web:
