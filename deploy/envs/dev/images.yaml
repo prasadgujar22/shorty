@@ -5,6 +5,6 @@ links-svc:
 redirect-svc:
   image: {tag: "0.1.0"}
 analytics-svc:
-  image: {tag: "0.1.0"}
+  image: {tag: "d71cf0c"}
 web:
   image: {tag: "d71cf0c"}
