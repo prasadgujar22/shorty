@@ -27,6 +27,14 @@ help: ## Show this help
 .PHONY: bootstrap
 bootstrap: tools cluster-up platform ## Install tools, create the cluster, install the platform (ingress, data, observability)
 
+.PHONY: start
+start: ## Resume the stopped cluster (or build everything if none exists), then smoke-test all envs
+	@scripts/shortyctl.sh start
+
+.PHONY: stop
+stop: ## Pause the whole setup (keeps all data, frees CPU/RAM and ports)
+	@scripts/shortyctl.sh stop
+
 .PHONY: tools
 tools: ## Install/verify CLI tools (Homebrew on macOS)
 	@scripts/tools.sh
@@ -80,8 +88,8 @@ smoke: ## End-to-end smoke test through the gateway
 	@scripts/smoke.sh
 
 .PHONY: status
-status: ## Show pods, HPAs and PDBs for the app namespace
-	@kubectl --context $(KUBE_CONTEXT) -n $(NAMESPACE) get pods,hpa,pdb -o wide
+status: ## Cluster state, Argo CD apps, pod health and URLs
+	@scripts/shortyctl.sh status
 
 ##@ GitOps
 .PHONY: gitops

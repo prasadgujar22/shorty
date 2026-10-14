@@ -76,6 +76,19 @@ make bootstrap && make up
 
 Then open **http://localhost:8088**.
 
+Day to day, pause and resume everything (cluster, platform, Argo CD and all
+three envs) without losing data:
+
+```bash
+scripts/shortyctl.sh stop      # or: make stop    (~5 s; frees CPU, RAM, ports)
+scripts/shortyctl.sh start     # or: make start   (~5-7 min; waits for health, smoke-tests all envs)
+scripts/shortyctl.sh status    # or: make status
+scripts/shortyctl.sh destroy   # delete everything (asks first)
+```
+
+`start` builds everything from scratch (bootstrap, local env, GitOps) when no
+cluster exists.
+
 Optional: hand the cluster to GitOps (Argo CD pulls this repo and GHCR):
 
 ```bash
@@ -118,7 +131,8 @@ curl -s 'localhost:8088/api/links?limit=20'     # recent links (keyset paginatio
 | `make up` | `build` + `deploy` + `smoke` (`ENV=dev\|ha`) |
 | `make deploy` | Helm upgrade the umbrella chart with local images into `NAMESPACE` (default `shorty`) |
 | `make smoke` | End-to-end check through the gateway (`BASE_URL=...`) |
-| `make status` | Pods, HPAs and PDBs |
+| `make start` / `make stop` | Resume / pause the whole setup, keeping data (`scripts/shortyctl.sh`) |
+| `make status` | Cluster state, Argo CD apps, pod health and URLs |
 | `make gitops` | Install Argo CD + app-of-apps |
 | `make load` | k6 load test against the redirect path |
 | `make chaos` / `make chaos-<scenario>` | Chaos scenarios under load, results appended to `docs/RESULTS.md` |
