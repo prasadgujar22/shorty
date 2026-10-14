@@ -11,8 +11,13 @@ code=$(curl -s -o /dev/null -w '%{http_code}' "$base/")
 [[ "$code" == 200 ]] && pass "GET / -> 200 (web)" || fail "GET / -> $code"
 
 slug="smoke-$(date +%s)"
-created=$(curl -sf -XPOST "$base/api/links" -H 'Content-Type: application/json' \
-  -d "{\"url\":\"https://example.com/smoke?ts=$(date +%s)\",\"slug\":\"$slug\"}") || fail "POST /api/links"
+created=""
+for _ in 1 2 3 4 5; do   # tolerate a gateway/endpoint warm-up right after a deploy
+  created=$(curl -sf -XPOST "$base/api/links" -H 'Content-Type: application/json' \
+    -d "{\"url\":\"https://example.com/smoke?ts=$(date +%s)\",\"slug\":\"$slug\"}") && break
+  sleep 2
+done
+[[ -n "$created" ]] || fail "POST /api/links"
 pass "POST /api/links -> $(jq -r .short_url <<<"$created")"
 
 loc=$(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' -H 'Referer: https://smoke.test/' "$base/$slug")
@@ -26,7 +31,7 @@ code=$(curl -s -o /dev/null -w '%{http_code}' "$base/s/$slug")
 [[ "$code" == 200 ]] && pass "GET /s/$slug -> 200 (SPA route)" || fail "SPA route -> $code"
 
 for i in $(seq 1 30); do
-  total=$(curl -sf "$base/api/stats/$slug" | jq -r .total)
+  total=$(curl -sf "$base/api/stats/$slug" 2>/dev/null | jq -r .total 2>/dev/null || true)
   [[ "$total" == 3 ]] && break
   sleep 1
 done

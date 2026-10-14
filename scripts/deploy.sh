@@ -36,4 +36,11 @@ helm --kube-context "$KUBE_CONTEXT" upgrade --install shorty "$ROOT_DIR/deploy/c
   --set links-svc.env.PUBLIC_BASE_URL="${BASE_URL:-http://localhost:8088}" \
   --wait --timeout 10m --hide-notes
 
+# Helm's --wait can return before readiness gates settle on a fresh install
+# (Postgres initdb takes ~60s); wait explicitly for the data tier and apps.
+log "waiting for Postgres and service rollouts"
+kc -n "$ns" wait cluster.postgresql.cnpg.io/shorty-pg --for=condition=Ready --timeout=300s >/dev/null
+for d in links-svc redirect-svc analytics-svc web redis; do
+  kc -n "$ns" rollout status "deploy/$d" --timeout=300s >/dev/null
+done
 kc -n "$ns" get pods -o wide
