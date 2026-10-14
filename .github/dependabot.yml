@@ -31,9 +31,19 @@ updates:
     commit-message: { prefix: "build(deps)" }
     groups:
       base-images: { patterns: ["*"] }
+    ignore:
+      # Web builds stay on the Node LTS line (Node 25+ breaks the SvelteKit 3
+      # build, see services/web/.nvmrc); move majors deliberately.
+      - dependency-name: node
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: helm
     directories:
       - /deploy/charts/shorty
     schedule: { interval: weekly, day: monday }
     commit-message: { prefix: "build(deps)" }
+    ignore:
+      # A Postgres major is a CNPG major-version upgrade (new cluster or
+      # in-place upgrade procedure), never a plain image bump.
+      - dependency-name: ghcr.io/cloudnative-pg/postgresql
+        update-types: ["version-update:semver-major"]
