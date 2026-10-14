@@ -10,8 +10,9 @@ import (
 
 // JetStream publishes clicks to a stream and waits for the server ack.
 type JetStream struct {
-	JS     jetstream.JetStream
-	Stream string
+	JS      jetstream.JetStream
+	Stream  string
+	Subject string
 }
 
 func (j JetStream) Publish(ctx context.Context, c events.Click) error {
@@ -19,7 +20,7 @@ func (j JetStream) Publish(ctx context.Context, c events.Click) error {
 	if err != nil {
 		return err
 	}
-	_, err = j.JS.Publish(ctx, events.Subject, data,
+	_, err = j.JS.Publish(ctx, j.Subject, data,
 		jetstream.WithMsgID(c.ID),            // server-side de-dup within the duplicate window
 		jetstream.WithExpectStream(j.Stream), // fail loudly if the subject is not captured
 	)

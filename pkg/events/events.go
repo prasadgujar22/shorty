@@ -22,8 +22,9 @@ import (
 	"github.com/prasadgujar22/shorty/pkg/config"
 )
 
-// Subject is where click events are published (versioned for evolution).
-const Subject = "clicks.v1"
+// DefaultSubject is where click events are published (versioned so the
+// payload can evolve alongside a new subject).
+const DefaultSubject = "clicks.v1"
 
 // Click is a single redirect. ID is globally unique and is used for
 // de-duplication twice: by JetStream (Nats-Msg-Id, within the duplicate
@@ -78,6 +79,7 @@ func ReferrerHost(ref string) string {
 // StreamConfig is the CLICKS stream definition.
 type StreamConfig struct {
 	Name            string
+	Subject         string
 	Replicas        int
 	MaxAge          time.Duration
 	MaxBytes        int64
@@ -88,6 +90,7 @@ type StreamConfig struct {
 func StreamConfigFromEnv(env *config.Env) StreamConfig {
 	return StreamConfig{
 		Name:            env.String("CLICKS_STREAM", "CLICKS"),
+		Subject:         env.String("CLICKS_SUBJECT", DefaultSubject),
 		Replicas:        env.Int("CLICKS_STREAM_REPLICAS", 1),
 		MaxAge:          env.Duration("CLICKS_STREAM_MAX_AGE", 7*24*time.Hour),
 		MaxBytes:        int64(env.Int("CLICKS_STREAM_MAX_BYTES", 1<<30)),
@@ -102,7 +105,7 @@ func EnsureStream(ctx context.Context, js jetstream.JetStream, c StreamConfig) (
 	return js.CreateOrUpdateStream(ctx, jetstream.StreamConfig{
 		Name:        c.Name,
 		Description: "Shorty click events (redirect-svc -> analytics-svc)",
-		Subjects:    []string{"clicks.>"},
+		Subjects:    []string{c.Subject},
 		Storage:     jetstream.FileStorage,
 		Retention:   jetstream.LimitsPolicy,
 		Replicas:    c.Replicas,

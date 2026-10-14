@@ -76,6 +76,8 @@ func (c Config) PoolConfig() (*pgxpool.Config, error) {
 	if c.StatementTimeout > 0 {
 		rp["statement_timeout"] = fmt.Sprint(c.StatementTimeout.Milliseconds())
 	}
+	// All timestamps and date_trunc() buckets are UTC regardless of server config.
+	rp["timezone"] = "UTC"
 	if rp["application_name"] == "" {
 		rp["application_name"] = "shorty"
 	}

@@ -1,0 +1,53 @@
+# Whole stack without Kubernetes, for quick local iteration:
+#   docker compose -f deploy/compose/dev.yml up --build
+# Gateway is not included; services are exposed on 18081-18083.
+name: shorty-dev
+x-go-env: &go-env
+  LOG_LEVEL: info
+  SHUTDOWN_DRAIN_DELAY: 1s
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment: { POSTGRES_USER: shorty, POSTGRES_PASSWORD: shorty-local-only, POSTGRES_DB: shorty }
+    volumes: ["./initdb:/docker-entrypoint-initdb.d:ro"]
+    healthcheck: { test: ["CMD", "pg_isready", "-U", "shorty"], interval: 1s, retries: 30 }
+  redis:
+    image: redis:8-alpine
+    healthcheck: { test: ["CMD", "redis-cli", "ping"], interval: 1s, retries: 30 }
+  nats:
+    image: nats:2.12-alpine
+    command: ["-js", "-m", "8222"]
+    healthcheck: { test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8222/healthz"], interval: 1s, retries: 30 }
+  links-svc:
+    build: { context: ../.., dockerfile: services/links-svc/Dockerfile }
+    environment:
+      <<: *go-env
+      PGHOST: postgres
+      PGUSER: links
+      PGPASSWORD: links-local-only
+      PGDATABASE: shorty
+      PGSSLMODE: disable
+      PUBLIC_BASE_URL: http://localhost:18082
+    ports: ["127.0.0.1:18081:8080"]
+    depends_on: { postgres: { condition: service_healthy } }
+  redirect-svc:
+    build: { context: ../.., dockerfile: services/redirect-svc/Dockerfile }
+    environment:
+      <<: *go-env
+      REDIS_ADDR: redis:6379
+      NATS_URL: nats://nats:4222
+      LINKS_URL: http://links-svc:8080
+    ports: ["127.0.0.1:18082:8080"]
+    depends_on: [redis, nats, links-svc]
+  analytics-svc:
+    build: { context: ../.., dockerfile: services/analytics-svc/Dockerfile }
+    environment:
+      <<: *go-env
+      PGHOST: postgres
+      PGUSER: analytics
+      PGPASSWORD: analytics-local-only
+      PGDATABASE: shorty
+      PGSSLMODE: disable
+      NATS_URL: nats://nats:4222
+    ports: ["127.0.0.1:18083:8080"]
+    depends_on: { postgres: { condition: service_healthy }, nats: { condition: service_healthy } }

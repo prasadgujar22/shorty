@@ -34,7 +34,7 @@ func TestJetStreamPublishAndDedup(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
-	cfg := events.StreamConfig{Name: "CLICKS_IT_REDIRECT", Replicas: 1, MaxAge: time.Hour, MaxBytes: 64 << 20, DuplicateWindow: time.Minute}
+	cfg := events.StreamConfig{Name: "CLICKS_IT_REDIRECT", Subject: "it.redirect.clicks", Replicas: 1, MaxAge: time.Hour, MaxBytes: 64 << 20, DuplicateWindow: time.Minute}
 	_ = js.DeleteStream(ctx, cfg.Name)
 	stream, err := events.EnsureStream(ctx, js, cfg)
 	if err != nil {
@@ -46,7 +46,7 @@ func TestJetStreamPublishAndDedup(t *testing.T) {
 	}
 	defer func() { _ = js.DeleteStream(context.Background(), cfg.Name) }()
 
-	pub := JetStream{JS: js, Stream: cfg.Name}
+	pub := JetStream{JS: js, Stream: cfg.Name, Subject: cfg.Subject}
 	r := New(pub, Options{BufferSize: 1000, Workers: 8}, log, prometheus.NewRegistry())
 	for range 500 {
 		r.Record(events.Click{ID: events.NewID(), Slug: "it", At: time.Now().UTC(), Referrer: "direct"})

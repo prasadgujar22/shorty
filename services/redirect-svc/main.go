@@ -98,7 +98,7 @@ func run() error {
 		})
 	}()
 
-	rec := clicks.New(clicks.JetStream{JS: js, Stream: stream.Name}, recOpts, log, srv.Registry)
+	rec := clicks.New(clicks.JetStream{JS: js, Stream: stream.Name, Subject: stream.Subject}, recOpts, log, srv.Registry)
 	// Stop hooks run in reverse: flush clicks first, then drain NATS.
 	srv.OnStop(func(context.Context) error { return nc.Drain() })
 	srv.OnStop(rec.Stop)
