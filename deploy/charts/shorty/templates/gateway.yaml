@@ -16,6 +16,21 @@ spec:
   retry:
     attempts: {{ $g.retry.attempts }}
     initialInterval: {{ $g.retry.initialInterval }}
+{{- /* Named TraefikServices so gateway metrics read
+   exported_service="<namespace>-<backend>@kubernetescrd" instead of a hash. */}}
+{{- range $svc := list "links-svc" "analytics-svc" "web" "redirect-svc" }}
+---
+apiVersion: traefik.io/v1alpha1
+kind: TraefikService
+metadata:
+  name: {{ $svc }}
+  labels:
+    {{- include "shorty.labels" $ | nindent 4 }}
+spec:
+  weighted:
+    services:
+      - { name: {{ $svc }}, port: 8080, weight: 1 }
+{{- end }}
 ---
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
@@ -29,19 +44,19 @@ spec:
     - kind: Rule
       match: {{ printf "%sPathPrefix(`/api/links`)" $host | quote }}
       priority: {{ add $p 100 }}
-      services: [{ name: links-svc, port: 8080 }]
+      services: [{ name: links-svc, kind: TraefikService }]
     - kind: Rule
       match: {{ printf "%sPathPrefix(`/api/stats`)" $host | quote }}
       priority: {{ add $p 100 }}
       middlewares: [{ name: retry-idempotent }]
-      services: [{ name: analytics-svc, port: 8080 }]
+      services: [{ name: analytics-svc, kind: TraefikService }]
     - kind: Rule
       match: {{ printf "%s(Path(`/`) || PathPrefix(`/_app/`) || PathPrefix(`/s/`) || Path(`/favicon.svg`) || Path(`/robots.txt`))" $host | quote }}
       priority: {{ add $p 90 }}
       middlewares: [{ name: retry-idempotent }]
-      services: [{ name: web, port: 8080 }]
+      services: [{ name: web, kind: TraefikService }]
     - kind: Rule
       match: {{ printf "%sPathPrefix(`/`)" $host | quote }}
       priority: {{ add $p 1 }}
       middlewares: [{ name: retry-idempotent }]
-      services: [{ name: redirect-svc, port: 8080 }]
+      services: [{ name: redirect-svc, kind: TraefikService }]

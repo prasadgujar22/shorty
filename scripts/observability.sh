@@ -26,6 +26,6 @@ log "prometheus-adapter ${ADAPTER_CHART}"
 argo_managed prometheus-adapter && log "prometheus-adapter: managed by Argo CD, skipping" || "${H[@]}" prometheus-adapter prometheus-community/prometheus-adapter --version "$ADAPTER_CHART" -f "$P/prometheus-adapter/values.yaml"
 
 log "dashboards + alert rules"
-kc apply -k "$ROOT_DIR/deploy/dashboards" >/dev/null
+argo_managed dashboards && log "dashboards: managed by Argo CD, skipping" || kc apply --server-side -k "$ROOT_DIR/deploy/dashboards" >/dev/null
 kc -n monitoring get pods
 log "Grafana: http://grafana.localhost:8088 (anonymous viewer; admin password: kubectl -n monitoring get secret grafana-admin -o jsonpath='{.data.admin-password}' | base64 -d)"

@@ -143,7 +143,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(rate(shorty_http_requests_total{job=\"redirect-svc\", namespace=~\"$namespace\", code=~\"5..\"}[$__rate_interval])) / clamp_min(sum(rate(shorty_http_requests_total{job=\"redirect-svc\", namespace=~\"$namespace\"}[$__rate_interval])), 1e-9)",
+          "expr": "(sum(rate(shorty_http_requests_total{job=\"redirect-svc\", namespace=~\"$namespace\", code=~\"5..\"}[$__rate_interval])) or vector(0)) / clamp_min(sum(rate(shorty_http_requests_total{job=\"redirect-svc\", namespace=~\"$namespace\"}[$__rate_interval])), 1e-9)",
           "legendFormat": "",
           "refId": "A"
         }
@@ -357,7 +357,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(rate(shorty_http_requests_total{job=\"links-svc\", namespace=~\"$namespace\", code=~\"5..\"}[$__rate_interval])) / clamp_min(sum(rate(shorty_http_requests_total{job=\"links-svc\", namespace=~\"$namespace\"}[$__rate_interval])), 1e-9)",
+          "expr": "(sum(rate(shorty_http_requests_total{job=\"links-svc\", namespace=~\"$namespace\", code=~\"5..\"}[$__rate_interval])) or vector(0)) / clamp_min(sum(rate(shorty_http_requests_total{job=\"links-svc\", namespace=~\"$namespace\"}[$__rate_interval])), 1e-9)",
           "legendFormat": "",
           "refId": "A"
         }
@@ -571,7 +571,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(rate(shorty_http_requests_total{job=\"analytics-svc\", namespace=~\"$namespace\", code=~\"5..\"}[$__rate_interval])) / clamp_min(sum(rate(shorty_http_requests_total{job=\"analytics-svc\", namespace=~\"$namespace\"}[$__rate_interval])), 1e-9)",
+          "expr": "(sum(rate(shorty_http_requests_total{job=\"analytics-svc\", namespace=~\"$namespace\", code=~\"5..\"}[$__rate_interval])) or vector(0)) / clamp_min(sum(rate(shorty_http_requests_total{job=\"analytics-svc\", namespace=~\"$namespace\"}[$__rate_interval])), 1e-9)",
           "legendFormat": "",
           "refId": "A"
         }
@@ -753,8 +753,8 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum by (service) (rate(traefik_service_requests_total{service=~\"($namespace)-.*\"}[$__rate_interval]))",
-          "legendFormat": "{{service}}",
+          "expr": "sum by (exported_service) (rate(traefik_service_requests_total{exported_service=~\"($namespace)-(web|links-svc|analytics-svc|redirect-svc)-8080@kubernetescrd\"}[$__rate_interval]))",
+          "legendFormat": "{{exported_service}}",
           "refId": "A"
         }
       ],
@@ -807,8 +807,8 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum by (service) (rate(traefik_service_requests_total{service=~\"($namespace)-.*\", code=~\"5..\"}[$__rate_interval]))",
-          "legendFormat": "{{service}}",
+          "expr": "sum by (exported_service) (rate(traefik_service_requests_total{exported_service=~\"($namespace)-(web|links-svc|analytics-svc|redirect-svc)-8080@kubernetescrd\", code=~\"5..\"}[$__rate_interval]))",
+          "legendFormat": "{{exported_service}}",
           "refId": "A"
         }
       ],

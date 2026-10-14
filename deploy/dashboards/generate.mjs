@@ -108,7 +108,7 @@ function red(job, y) {
     row(`${job} · RED`, y),
     stat('Request rate', { h: 4, w: 6, x: 0, y: y + 1 }, `sum(rate(shorty_http_requests_total{${sel}}[$__rate_interval]))`, { unit: 'reqps', decimals: 1 }),
     stat('Error ratio (5xx)', { h: 4, w: 6, x: 6, y: y + 1 },
-      `sum(rate(shorty_http_requests_total{${sel}, code=~"5.."}[$__rate_interval])) / clamp_min(sum(rate(shorty_http_requests_total{${sel}}[$__rate_interval])), 1e-9)`,
+      `(sum(rate(shorty_http_requests_total{${sel}, code=~"5.."}[$__rate_interval])) or vector(0)) / clamp_min(sum(rate(shorty_http_requests_total{${sel}}[$__rate_interval])), 1e-9)`,
       { unit: 'percentunit', decimals: 3, thresholds: thresholdsErr }),
     stat('p99 latency', { h: 4, w: 6, x: 12, y: y + 1 },
       `histogram_quantile(0.99, sum by (le) (rate(shorty_http_request_duration_seconds_bucket{${sel}}[$__rate_interval])))`,
@@ -248,12 +248,12 @@ out['analytics-svc'] = dashboard('shorty-analytics-svc', 'Shorty / analytics-svc
 
 // ---------------- web (Traefik RED + Nginx) ----------------
 resetIds();
-const tw = `service=~"($namespace)-web-.*"`;
+const tw = `exported_service=~"($namespace)-web-8080@kubernetescrd"`;
 out.web = dashboard('shorty-web', 'Shorty / web', [
   row('web · RED (measured at the gateway)', 0),
   stat('Request rate', { h: 4, w: 8, x: 0, y: 1 }, `sum(rate(traefik_service_requests_total{${tw}}[$__rate_interval]))`, { unit: 'reqps', decimals: 1 }),
   stat('Error ratio (5xx)', { h: 4, w: 8, x: 8, y: 1 },
-    `sum(rate(traefik_service_requests_total{${tw}, code=~"5.."}[$__rate_interval])) / clamp_min(sum(rate(traefik_service_requests_total{${tw}}[$__rate_interval])), 1e-9)`,
+    `(sum(rate(traefik_service_requests_total{${tw}, code=~"5.."}[$__rate_interval])) or vector(0)) / clamp_min(sum(rate(traefik_service_requests_total{${tw}}[$__rate_interval])), 1e-9)`,
     { unit: 'percentunit', decimals: 3, thresholds: thresholdsErr }),
   stat('p99 latency', { h: 4, w: 8, x: 16, y: 1 },
     `histogram_quantile(0.99, sum by (le) (rate(traefik_service_request_duration_seconds_bucket{${tw}}[$__rate_interval])))`,
@@ -280,15 +280,15 @@ svcs.forEach((job, i) => {
   const y = 1 + i * 4;
   overview.push(
     stat(`${job} · rps`, { h: 4, w: 6, x: 0, y }, `sum(rate(shorty_http_requests_total{${sel}}[$__rate_interval]))`, { unit: 'reqps', decimals: 1 }),
-    stat(`${job} · 5xx`, { h: 4, w: 6, x: 6, y }, `sum(rate(shorty_http_requests_total{${sel}, code=~"5.."}[$__rate_interval])) / clamp_min(sum(rate(shorty_http_requests_total{${sel}}[$__rate_interval])), 1e-9)`, { unit: 'percentunit', decimals: 3, thresholds: thresholdsErr }),
+    stat(`${job} · 5xx`, { h: 4, w: 6, x: 6, y }, `(sum(rate(shorty_http_requests_total{${sel}, code=~"5.."}[$__rate_interval])) or vector(0)) / clamp_min(sum(rate(shorty_http_requests_total{${sel}}[$__rate_interval])), 1e-9)`, { unit: 'percentunit', decimals: 3, thresholds: thresholdsErr }),
     stat(`${job} · p99`, { h: 4, w: 6, x: 12, y }, `histogram_quantile(0.99, sum by (le) (rate(shorty_http_request_duration_seconds_bucket{${sel}}[$__rate_interval])))`, { unit: 's', decimals: 4, thresholds: thresholdsLat }),
     stat(`${job} · ready pods`, { h: 4, w: 6, x: 18, y }, `sum(kube_pod_status_ready{${NS}, condition="true", pod=~"${job}-.*"})`, { decimals: 0 })
   );
 });
 overview.push(
   row('Gateway (Traefik)', 13),
-  ts('Requests by backend', { h: 8, w: 12, x: 0, y: 14 }, [target(`sum by (service) (rate(traefik_service_requests_total{service=~"($namespace)-.*"}[$__rate_interval]))`, '{{service}}')], { unit: 'reqps' }),
-  ts('Gateway 5xx by backend', { h: 8, w: 12, x: 12, y: 14 }, [target(`sum by (service) (rate(traefik_service_requests_total{service=~"($namespace)-.*", code=~"5.."}[$__rate_interval]))`, '{{service}}')], { unit: 'reqps' }),
+  ts('Requests by backend', { h: 8, w: 12, x: 0, y: 14 }, [target(`sum by (exported_service) (rate(traefik_service_requests_total{exported_service=~"($namespace)-(web|links-svc|analytics-svc|redirect-svc)-8080@kubernetescrd"}[$__rate_interval]))`, '{{exported_service}}')], { unit: 'reqps' }),
+  ts('Gateway 5xx by backend', { h: 8, w: 12, x: 12, y: 14 }, [target(`sum by (exported_service) (rate(traefik_service_requests_total{exported_service=~"($namespace)-(web|links-svc|analytics-svc|redirect-svc)-8080@kubernetescrd", code=~"5.."}[$__rate_interval]))`, '{{exported_service}}')], { unit: 'reqps' }),
   row('Click pipeline (redirect → JetStream → analytics)', 22),
   ts('Clicks/s at each stage', { h: 8, w: 12, x: 0, y: 23 }, [
     target(`sum(rate(shorty_clicks_enqueued_total{${NS}}[$__rate_interval]))`, '1 enqueued (redirect)'),
