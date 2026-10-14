@@ -19,4 +19,4 @@ rules:
       name:
         matches: "^shorty_http_requests_total$"
         as: "shorty_http_requests_per_second"
-      metricsQuery: 'sum(rate(<<.Series>>{<<.LabelMatchers>>}[1m])) by (<<.GroupBy>>)'
+      metricsQuery: 'sum(rate(<<.Series>>{<<.LabelMatchers>>}[30s])) by (<<.GroupBy>>)'
