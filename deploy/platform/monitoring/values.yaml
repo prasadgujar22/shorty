@@ -83,8 +83,9 @@ grafana:
     analytics: { check_for_updates: false, reporting_enabled: false }
   persistence: { enabled: false }
   resources:
-    requests: { cpu: 25m, memory: 128Mi }
-    limits: { memory: 384Mi }
+    # Grafana 13 needs ~350-450 MiB while provisioning dashboards (OOMKilled at 384Mi).
+    requests: { cpu: 25m, memory: 192Mi }
+    limits: { memory: 768Mi }
   sidecar:
     dashboards:
       enabled: true
