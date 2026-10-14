@@ -1,0 +1,95 @@
+# Reusable CI for a Go service: lint, unit tests (race + coverage),
+# integration tests against real Postgres/Redis/NATS, then image build.
+name: _go-service
+
+on:
+  workflow_call:
+    inputs:
+      service:
+        description: Service directory under services/ (e.g. links-svc)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
+        with:
+          version: v2.14.0
+          args: ./pkg/... ./services/${{ inputs.service }}/...
+
+  test:
+    name: unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - name: go test (race, coverage)
+        run: |
+          go test -race -covermode=atomic -coverprofile=coverage.out ./pkg/... ./services/${{ inputs.service }}/...
+          total=$(go tool cover -func=coverage.out | awk '/^total:/ {print $3}')
+          echo "### ${{ inputs.service }} unit coverage: ${total}" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: coverage-${{ inputs.service }}
+          path: coverage.out
+          retention-days: 14
+
+  integration:
+    name: integration tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: shorty
+          POSTGRES_PASSWORD: ci-only-password # gitleaks:allow (throwaway CI service container)
+          POSTGRES_DB: shorty
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U shorty" --health-interval 2s --health-timeout 5s --health-retries 30
+      redis:
+        image: redis:8.10.2-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 2s --health-timeout 5s --health-retries 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      # Service containers can't pass arguments, and NATS needs `-js`.
+      - name: start NATS JetStream
+        run: |
+          docker run -d --name nats -p 4222:4222 -p 8222:8222 nats:2.15-alpine -js -m 8222
+          for _ in $(seq 1 30); do curl -sf "http://127.0.0.1:8222/healthz?js-enabled-only=true" && exit 0; sleep 1; done
+          docker logs nats; exit 1
+      - name: go test -tags integration
+        env:
+          TEST_DATABASE_URL: postgres://shorty:ci-only-password@127.0.0.1:5432/shorty?sslmode=disable # gitleaks:allow
+          TEST_REDIS_ADDR: 127.0.0.1:6379
+          TEST_NATS_URL: nats://127.0.0.1:4222
+        run: go test -tags integration -race -count=1 ./pkg/... ./services/${{ inputs.service }}/...
+
+  image:
+    needs: [lint, test, integration]
+    uses: ./.github/workflows/_build-image.yml
+    with:
+      service: ${{ inputs.service }}
+    permissions:
+      contents: write
+      packages: write
+      security-events: write
+      id-token: write
+      attestations: write

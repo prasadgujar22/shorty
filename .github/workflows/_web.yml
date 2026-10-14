@@ -1,0 +1,45 @@
+# Reusable CI for the web UI: eslint, svelte-check, vitest, production build
+# with the 100 KB JS+CSS budget, then image build.
+name: _web
+
+on:
+  workflow_call:
+    inputs:
+      service:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/web
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: services/web/.nvmrc
+          cache: npm
+          cache-dependency-path: services/web/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npm run lint
+      - run: npm run check
+      - run: npm test
+      - name: build + bundle budget
+        run: npm run build | tee -a "$GITHUB_STEP_SUMMARY"
+
+  image:
+    needs: checks
+    uses: ./.github/workflows/_build-image.yml
+    with:
+      service: ${{ inputs.service }}
+    permissions:
+      contents: write
+      packages: write
+      security-events: write
+      id-token: write
+      attestations: write

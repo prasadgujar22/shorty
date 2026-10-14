@@ -1,0 +1,56 @@
+# Tag vX.Y.Z -> build and push every image with semver tags, then stage the
+# release for the `ha` environment by committing deploy/envs/ha/images.yaml.
+# Argo CD's `shorty-ha` app is synced manually, so a human decides when it rolls.
+name: release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: read
+
+jobs:
+  images:
+    strategy:
+      fail-fast: true
+      matrix:
+        service: [links-svc, redirect-svc, analytics-svc, web]
+    uses: ./.github/workflows/_build-image.yml
+    with:
+      service: ${{ matrix.service }}
+    permissions:
+      contents: write
+      packages: write
+      security-events: write
+      id-token: write
+      attestations: write
+
+  promote-ha:
+    needs: images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: gitops-ha
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+      - name: pin ha images to ${{ github.ref_name }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase --quiet origin main
+            for svc in links-svc redirect-svc analytics-svc web; do
+              yq -i ".\"${svc}\".image.tag = \"${version}\"" deploy/envs/ha/images.yaml
+            done
+            git diff --quiet && exit 0
+            git commit -qam "chore(gitops): ha -> ${GITHUB_REF_NAME}"
+            git push origin HEAD:main && exit 0
+            git reset -q --hard origin/main; sleep $((attempt * 3))
+          done
+          exit 1

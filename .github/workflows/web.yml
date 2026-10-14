@@ -1,0 +1,36 @@
+name: web
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - services/web/**
+      - .github/workflows/web.yml
+      - .github/workflows/_web.yml
+      - .github/workflows/_build-image.yml
+  pull_request:
+    paths:
+      - services/web/**
+      - .github/workflows/web.yml
+      - .github/workflows/_web.yml
+      - .github/workflows/_build-image.yml
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    uses: ./.github/workflows/_web.yml
+    with:
+      service: web
+    permissions:
+      contents: write
+      packages: write
+      security-events: write
+      id-token: write
+      attestations: write

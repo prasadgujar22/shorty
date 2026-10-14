@@ -11,7 +11,7 @@ COPY services/web/ ./
 RUN npm run build && node scripts/csp.mjs build > /tmp/security-headers.conf
 
 # Non-root Nginx (uid 101), listens on 8080 (+ 9090 for health).
-FROM nginxinc/nginx-unprivileged:1.29-alpine
+FROM nginxinc/nginx-unprivileged:1.30-alpine-slim
 LABEL org.opencontainers.image.source="https://github.com/prasadgujar22/shorty" \
       org.opencontainers.image.description="Shorty web UI (SvelteKit static + Nginx)" \
       org.opencontainers.image.licenses="MIT"

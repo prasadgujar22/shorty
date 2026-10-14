@@ -1,0 +1,44 @@
+name: links-svc
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - services/links-svc/**
+      - pkg/**
+      - go.mod
+      - go.sum
+      - .golangci.yml
+      - .github/workflows/links-svc.yml
+      - .github/workflows/_go-service.yml
+      - .github/workflows/_build-image.yml
+  pull_request:
+    paths:
+      - services/links-svc/**
+      - pkg/**
+      - go.mod
+      - go.sum
+      - .golangci.yml
+      - .github/workflows/links-svc.yml
+      - .github/workflows/_go-service.yml
+      - .github/workflows/_build-image.yml
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    uses: ./.github/workflows/_go-service.yml
+    with:
+      service: links-svc
+    permissions:
+      contents: write
+      packages: write
+      security-events: write
+      id-token: write
+      attestations: write

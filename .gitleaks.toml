@@ -1,0 +1,12 @@
+# Extend the default rules; allow the deliberately fake local/CI credentials.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Throwaway credentials for local docker-compose and CI service containers"
+regexes = [
+  '''[a-z]+-(local|test|ci)-only(-password)?''',
+]
+paths = [
+  '''deploy/compose/''',
+]
