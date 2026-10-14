@@ -21,7 +21,7 @@ deploy/charts/*/Chart.lock.bak
 !.env.example
 *.local.yaml
 /.tmp/
-load/results/*.json
+load/results/*
 !load/results/.gitkeep
 kubeconfig*
 
