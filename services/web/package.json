@@ -1,0 +1,35 @@
+{
+  "name": "shorty-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22.17"
+  },
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build && node scripts/budget.mjs",
+    "preview": "vite preview",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "budget": "node scripts/budget.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@fontsource/jetbrains-mono": "5.3.0",
+    "@sveltejs/adapter-static": "4.0.0",
+    "@sveltejs/kit": "3.0.1",
+    "@sveltejs/vite-plugin-svelte": "7.3.1",
+    "@types/node": "^24.19.2",
+    "eslint": "10.12.0",
+    "eslint-plugin-svelte": "3.23.1",
+    "globals": "17.13.0",
+    "svelte": "5.57.2",
+    "svelte-check": "4.7.6",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.2",
+    "vite": "8.3.4",
+    "vitest": "5.0.4"
+  }
+}

@@ -25,6 +25,12 @@ if [[ ${#missing[@]} -gt 0 ]]; then
   fi
 fi
 
+node_major=$(node -p 'process.versions.node.split(".")[0]')
+if [[ "$node_major" != 22 && "$node_major" != 24 ]]; then
+  warn "Node $node_major is not an LTS line; the web build needs Node 22 or 24 (see services/web/.nvmrc)."
+  warn "  brew install node@24 && export PATH=/opt/homebrew/opt/node@24/bin:\$PATH"
+fi
+
 docker info >/dev/null 2>&1 || die "Docker daemon is not running"
 mem_gib=$(( $(docker info --format '{{.MemTotal}}') / 1024 / 1024 / 1024 ))
 if (( mem_gib < 10 )); then

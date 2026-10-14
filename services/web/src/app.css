@@ -1,0 +1,225 @@
+/*
+ * SHORTY design system.
+ * Exactly two colours exist: #000000 and #ffffff. Everything else —
+ * hierarchy, state, emphasis — comes from weight, size, spacing, 1px
+ * borders, dashes, hatching and inversion. No greys, no opacity.
+ */
+@import '@fontsource/jetbrains-mono/latin-400.css';
+@import '@fontsource/jetbrains-mono/latin-700.css';
+
+:root {
+  --black: #000000;
+  --white: #ffffff;
+  --bg: var(--white);
+  --fg: var(--black);
+
+  --font: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 16px;
+  --s4: 24px;
+  --s5: 40px;
+  --s6: 64px;
+  --s7: 104px;
+  --measure: 960px;
+  --rule: 1px solid var(--fg);
+  --rule-dashed: 1px dashed var(--fg);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: var(--black);
+    --fg: var(--white);
+    color-scheme: dark;
+  }
+}
+:root[data-theme='dark'] {
+  --bg: var(--black);
+  --fg: var(--white);
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+::selection {
+  background: var(--fg);
+  color: var(--bg);
+}
+
+a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+a:hover {
+  text-decoration-thickness: 3px;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+/* Uppercase micro-label */
+.label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.mono-num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Visible, never-removed focus ring: a solid 2px outline offset from the
+   element, in the foreground colour. */
+:focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: 3px;
+}
+
+button,
+.button {
+  appearance: none;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--fg);
+  background: var(--bg);
+  border: var(--rule);
+  border-radius: 0;
+  padding: var(--s2) var(--s3);
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: 36px;
+}
+/* Inversion is the only interaction state. */
+button:hover,
+button:focus-visible,
+button:active,
+button[aria-pressed='true'],
+.button:hover,
+.button:focus-visible {
+  background: var(--fg);
+  color: var(--bg);
+}
+button:disabled {
+  cursor: not-allowed;
+  border-style: dashed;
+  background: var(--bg);
+  color: var(--fg);
+}
+button.primary {
+  background: var(--fg);
+  color: var(--bg);
+}
+button.primary:hover,
+button.primary:focus-visible {
+  background: var(--bg);
+  color: var(--fg);
+}
+button.primary:disabled {
+  background: var(--bg);
+  color: var(--fg);
+}
+
+input[type='text'],
+input[type='url'] {
+  font: inherit;
+  color: var(--fg);
+  background: var(--bg);
+  border: 0;
+  border-bottom: var(--rule);
+  border-radius: 0;
+  padding: var(--s2) 0;
+  width: 100%;
+}
+input::placeholder {
+  color: var(--fg);
+  font-style: italic;
+}
+input:focus-visible {
+  outline: none;
+  border-bottom-width: 3px;
+  padding-bottom: calc(var(--s2) - 2px);
+}
+input[aria-invalid='true'] {
+  border-bottom-style: dashed;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: absolute;
+  left: var(--s3);
+  top: -100px;
+  background: var(--fg);
+  color: var(--bg);
+  padding: var(--s2) var(--s3);
+  z-index: 10;
+}
+.skip-link:focus {
+  top: var(--s3);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  button,
+  .button,
+  a {
+    transition:
+      background-color 80ms linear,
+      color 80ms linear,
+      text-decoration-thickness 80ms linear;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
