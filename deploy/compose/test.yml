@@ -1,0 +1,30 @@
+# Dependencies for `make test-integration` (mirrors the CI service containers).
+name: shorty-test
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: shorty
+      POSTGRES_PASSWORD: shorty-test-only
+      POSTGRES_DB: shorty
+    ports: ["127.0.0.1:55432:5432"]
+    tmpfs: [/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "shorty"]
+      interval: 1s
+      retries: 30
+  redis:
+    image: redis:8-alpine
+    ports: ["127.0.0.1:56379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 1s
+      retries: 30
+  nats:
+    image: nats:2.12-alpine
+    command: ["-js", "-m", "8222"]
+    ports: ["127.0.0.1:54222:4222"]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8222/healthz?js-enabled-only=true"]
+      interval: 1s
+      retries: 30

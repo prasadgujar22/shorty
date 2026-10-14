@@ -1,0 +1,10 @@
+**/node_modules
+**/.svelte-kit
+services/web/build
+.git
+deploy
+docs
+chaos
+load
+*.out
+coverage*
