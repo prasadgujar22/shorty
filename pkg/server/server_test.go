@@ -39,6 +39,10 @@ func TestReadinessLifecycle(t *testing.T) {
 	if code, body := get(t, h, "/readyz"); code != 200 || body["postgres"] != "ok" {
 		t.Fatalf("ready: %d %v", code, body)
 	}
+	s.AddSoftCheck("redis", func(context.Context) error { return errors.New("down") })
+	if code, body := get(t, h, "/readyz"); code != 200 || body["redis"] != "degraded: down" {
+		t.Fatalf("soft check must not fail readiness: %d %v", code, body)
+	}
 	dbErr = errors.New(`conn "refused"`)
 	if code, body := get(t, h, "/readyz"); code != 503 || body["postgres"] != `conn "refused"` {
 		t.Fatalf("dep down: %d %v", code, body)

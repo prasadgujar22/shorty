@@ -39,6 +39,11 @@ import (
 // Check is a readiness dependency check. It must honour ctx.
 type Check func(ctx context.Context) error
 
+type namedCheck struct {
+	fn       Check
+	critical bool
+}
+
 // Options configure the listeners and shutdown behaviour.
 type Options struct {
 	Addr            string
@@ -72,7 +77,7 @@ type Server struct {
 	Registry *prometheus.Registry
 
 	mu     sync.Mutex
-	checks map[string]Check
+	checks map[string]namedCheck
 	stops  []func(context.Context) error
 
 	ready    atomic.Bool // dependencies initialised
@@ -85,14 +90,23 @@ func New(opts Options, log *slog.Logger) *Server {
 	reg := prometheus.NewRegistry()
 	reg.MustRegister(collectors.NewGoCollector(), collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
 	buildinfo.Register(reg)
-	return &Server{opts: opts, log: log, Registry: reg, checks: map[string]Check{}}
+	return &Server{opts: opts, log: log, Registry: reg, checks: map[string]namedCheck{}}
 }
 
-// AddCheck registers a readiness check.
-func (s *Server) AddCheck(name string, c Check) {
+// AddCheck registers a critical readiness check: when it fails the pod is
+// taken out of load balancing.
+func (s *Server) AddCheck(name string, c Check) { s.addCheck(name, c, true) }
+
+// AddSoftCheck registers a dependency the service can degrade around. Its
+// status is reported by /readyz ("degraded: ...") but never fails readiness:
+// pulling every replica out of rotation because a shared dependency blipped
+// would turn a partial failure into a full outage.
+func (s *Server) AddSoftCheck(name string, c Check) { s.addCheck(name, c, false) }
+
+func (s *Server) addCheck(name string, c Check, critical bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.checks[name] = c
+	s.checks[name] = namedCheck{fn: c, critical: critical}
 }
 
 // OnStop registers a hook run after the HTTP server has drained, in reverse
@@ -135,7 +149,7 @@ func (s *Server) handleReady(w http.ResponseWriter, r *http.Request) {
 		code = http.StatusServiceUnavailable
 	default:
 		s.mu.Lock()
-		checks := make(map[string]Check, len(s.checks))
+		checks := make(map[string]namedCheck, len(s.checks))
 		for k, v := range s.checks {
 			checks[k] = v
 		}
@@ -149,13 +163,16 @@ func (s *Server) handleReady(w http.ResponseWriter, r *http.Request) {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				err := check(ctx)
+				err := check.fn(ctx)
 				mu.Lock()
 				defer mu.Unlock()
-				if err != nil {
+				switch {
+				case err != nil && check.critical:
 					status[name] = err.Error()
 					code = http.StatusServiceUnavailable
-				} else {
+				case err != nil:
+					status[name] = "degraded: " + err.Error()
+				default:
 					status[name] = "ok"
 				}
 			}()
