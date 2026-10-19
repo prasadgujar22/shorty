@@ -45,7 +45,7 @@ redis:
     limits: { cpu: 500m, memory: 128Mi }
   exporter:
     enabled: true
-    image: oliver006/redis_exporter:v1.93.0
+    image: oliver006/redis_exporter:1.94.0
 
 nats:
   enabled: true
