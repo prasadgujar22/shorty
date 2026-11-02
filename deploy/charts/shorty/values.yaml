@@ -38,7 +38,7 @@ redis:
   # Independent cache replicas behind one Service (no replication needed:
   # entries are immutable and re-fillable). >1 = cache stays up when a pod dies.
   replicas: 1
-  image: redis:8.10.2-alpine
+  image: redis:8.10.3-alpine
   maxmemory: 96mb
   resources:
     requests: { cpu: 25m, memory: 32Mi }
